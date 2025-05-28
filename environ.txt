@@ -1,20 +1,44 @@
-flowchart TD
-    A[Start: Run Script] --> B[Load environment variables from .env]
-    B --> C[Authenticate to source GitHub (SOURCE_TOKEN + ORG)]
-    B --> D[Authenticate to destination GitHub (DESTINATION_TOKEN + ORG)]
+h1. High Level Plan for Medium Complexity Orgs
 
-    C --> E[Fetch SOURCE repo]
-    D --> F[Fetch DESTINATION repo]
+h2. Quick Navigation
 
-    E --> G[Fetch tags from source repo]
-    F --> H[Fetch tags from destination repo]
+* \[Medium Criteria Summary|#Medium Criteria Summary]
+* \[Filter Reference Table|#Filter Reference Table]
 
-    G --> I[Compare tag names]
-    H --> I
+h2. Medium Criteria Summary
+A GitHub repository may be classified as "Medium Complexity" if it meets most of the following:
 
-    I --> J{Are there missing tags?}
-    J -- Yes --> K[Write missing tags to CSV]
-    J -- No --> L[Log: All tags present]
+| *Metric*       | *Threshold / Condition* |
+| -------------- | ----------------------- |
+| Total Metadata | < 20,500                |
+| Wiki           | Exists, no attachments  |
+| Issues         | Exists, no attachments  |
+| Pull Requests  | ≤ 10 open PRs           |
+| Repo Size      | < 20 GB                 |
+| Commit Size    | < 2 GB                  |
+| Releases       | < 100 MB total assets   |
 
-    K --> M[End]
-    L --> M[End]
+These thresholds are designed to balance performance and ease of automation. Orgs that fall within these limits are typically manageable without deep manual intervention.
+
+h2. Filter Reference Table
+
+| *Filter*           | *Why It’s Flagged*                         | *False Positive Example*                      | *Notes*                                             |
+| ------------------ | ------------------------------------------ | --------------------------------------------- | --------------------------------------------------- |
+| Size Filtering     | Repo is large; may slow transfer/migration | A few large binary assets like PDFs or videos | Use Git LFS if needed; ignore inactive binary bloat |
+| Branch Count       | >50 branches may imply complexity          | Mostly inactive branches                      | Clean up with `git branch --merged`                 |
+| Commit Count       | >400 implies heavy history                 | Frequent bot commits                          | Use `git shortlog -sn` to audit                     |
+| Webhooks           | Hooks require reconfiguration              | One unused webhook from years ago             | Remove unused hooks before migration                |
+| Runners            | Self-hosted runners may not port easily    | Runner registered but never used              | Check runner job history                            |
+| Actions            | Workflows need validation and secrets      | Linting-only or disabled workflows            | Look in `.github/workflows/`                        |
+| Branch Protections | Require recreation in SaaS                 | Default rule on unused branch                 | List protections using GitHub API                   |
+| Issues             | May require data preservation              | Issues exist but have no attachments          | Use external issue tracking tools                   |
+| Pages              | Might need DNS/config porting              | Static site with default `.github.io` domain  | Low migration risk if unused                        |
+| Releases           | Tagged builds may have large assets        | One old release with no assets                | Check total artifact size < 100MB                   |
+| Wiki               | Needs to be migrated manually              | Empty wiki or 1-page wiki                     | Clone wiki repo via Git                             |
+| Binary Files       | Git can’t delta-compress them well         | One image or PDF added years ago              | Enable Git LFS for frequent binaries                |
+| Pull Requests      | Review state & comments must be preserved  | All PRs closed or inactive for years          | Export summaries instead of full data               |
+
+h2. Summary
+This medium complexity tier captures edge cases that were previously misclassified as "complex" but do not need high-touch manual effort. Use the table above to guide repo evaluation and prioritize migration sequencing.
+
+*Add visual diagrams and examples below if needed.*
