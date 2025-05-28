@@ -1,42 +1,36 @@
-## 🧭 New Hire and Intern Onboarding Guide
+Story 140:  
 
-| **Title** | **Link** | **Description** |
-|-----------|----------|-----------------|
-| Intern Calendar and Checklist | go/interns | Dedicated intern cohort page with key dates and to-dos. |
-| Benefits Overview | go/benefits \| go/qfitme | Overview of intern pay, benefits, and wellness options. |
-| Learn More About Qualcomm | go/learn | Company mission, values, and history. |
-| Join a Club Here | go/clubs | Explore employee clubs. (Note: info may be outdated—refer to the club Excel sheet for latest updates.) |
-| IT Help | go/ithelp | Get tech support for devices, accounts, and access. |
-| Charge Your EV for Free | go/evdrivers | Free EV charging resources for Qualcomm employees. |
-| Free Textbooks and Web Seminars | go/OReilly | Access to O’Reilly resources for technical topics and certifications. |
-| Appreciate an Employee | go/thankyou | Use the ThankQ portal to award appreciation tokens and redeem gifts. |
-| Ship Items to Lockers / Building | go/shipping | Set up shipping to your office locker. |
-| New Hire Portal | go/newhire | Sign up for Luxer Lockers and access essential onboarding steps. |
-| Fun Perks | [Fun Perks Page](https://example.com) | Discounts on attractions, parks, and movies. |
-| Equipment Checkout | Team Equipment Checkout \| QREF | Request work devices or accessories. |
+Story Purpose:
+Whenever there is  a migration we can have validation of the commit tags so that we can ensure no data loss. My script is similar to the branches and commit checks we have in the migrations scripts folder. 
 
-## 🗂 Project Notes and Events
+Flash the code:
+Show a quick demo of the code. Run it and show it work
 
-| **Title** | **Link** | **Description** |
-|-----------|----------|-----------------|
-| How to Query in MongoDB | SW Eng Compute Confluence | Common MongoDB queries and syntax tips. |
-| Join as an Admin | github.admin - A List Manager | Request admin access for internal tools. |
-| Lists to Be Added / Join | SW Eng Compute Confluence | Add yourself to internal email lists and projects. |
-| Export and Migrate GitHub Data | GitHub Enterprise Docs | Step-by-step on exporting from GitHub Server to GitHub Cloud. |
-| Migration Key Docs | GitHub Enterprise Docs | Understanding limitations and best practices for migration. |
-| Migration Tickets | [Jira Board](https://jira.qualcomm.com/...) | Track open tasks and issues tied to migration. |
-| PDLIM Jira Guidelines | SW Eng Compute Confluence | Scrum and project management practices. |
-| Access to Workgroup | pdlim.github.workgroup - A List Manager | Join project workgroups. |
-| GitHub Tags | GitHub Enterprise Docs | REST API reference for tag management. |
-| Commit Message Standards | tbaggery - Git Best Practices | Best practices for writing meaningful commit messages. |
-| Migration SOP | Confluence Migration Doc | Qualcomm steps for migrating to GitHub SaaS. |
+Output of the code:
+Show the csv file after the code and show the ID and tag name where it failed 
 
-## 📚 Resources I Found Helpful
+Flash Documentation:
+Show documentation and briefly go over the process again
 
-| **Title** | **Link** | **Description** |
-|-----------|----------|-----------------|
-| Deep Dive into Git | Pluralsight \| YouTube | Recommended if Git was a new objective for you. |
-| Jenkins Jobs and CI/CD Pipelines | YouTube | Basics of automation and pipeline workflows. |
-| GitHub Conversions | Docs \| Ask Copilot | Documentation + Copilot support. |
-| GitHub Actions & Docker | YouTube | Intro to containerization and automated workflows. |
-| MongoDB Query Builder | YouTube \| Docs | Basics of MongoDB querying and logic. |
+Explain the need for a follow up story
+ I have created a follow up story (story 261) to help make the code more industrialized and deployable (also to add any other features Turan and Rishi think would be good to add when it gets reviewed). 
+A lot of the edge cases are done. 
+Move code from non prod to prod 
+Raise PR and merge
+This story also has a subtask for nandita to do a QC check
+ 
+Story 189: 
+
+Show story: 
+This story was created just to track my onboarding process and an enable me as an intern and enable me as as a devops member as well
+
+Purpose of the documentation made: 
+Go over two sets of documentation
+
+Onboarding: 
+Was used to track all new golinks and other useful intern help guides. I found sams onboarding document helpful so I think this was a great way to collect some important information about the company and the on boarding process
+High level plan
+Mostly for myself to work off of. I use it as a baseline for the metrics needed to reclassify different orgs from complex to medium.  
+Plan to add different repo/org ids just to keep track of them 
+
+
