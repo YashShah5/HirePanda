@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 # --- Load .env ---
 load_dotenv()
 
+# Debug: Confirm token is loading
+print(" SAAS_TOKEN loaded:", os.getenv("SAAS_TOKEN")[:5], "..." if os.getenv("SAAS_TOKEN") else "None")
+
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
