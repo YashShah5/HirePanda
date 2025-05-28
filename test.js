@@ -1,110 +1,123 @@
 import os
 import csv
 import logging
+from pathlib import Path
 from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException
 from requests.exceptions import RequestException
 from dotenv import load_dotenv
 
 # --- Load .env ---
-load_dotenv()
+dotenv_path = Path('.') / '.env'
+load_dotenv(dotenv_path=dotenv_path)
 
-# Debug: Confirm token is loading
-print(" SAAS_TOKEN loaded:", os.getenv("SAAS_TOKEN")[:5], "..." if os.getenv("SAAS_TOKEN") else "None")
-
-# --- Logging Setup ---
+# --- Logging ---
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# --- Load Config Values ---
-ON_PREM_BASE_URL = os.getenv("ON_PREM_BASE_URL")
-ON_PREM_TOKEN = os.getenv("ON_PREM_TOKEN")
-ON_PREM_ORG = os.getenv("ON_PREM_ORG")
-ON_PREM_REPO = os.getenv("ON_PREM_REPO")
+# --- Load and validate env vars ---
+def get_env_var(name, required=True):
+    value = os.getenv(name)
+    if required and (value is None or not value.strip()):
+        raise EnvironmentError(f"Missing required environment variable: {name}")
+    return value.strip() if value else value
 
-SAAS_TOKEN = os.getenv("SAAS_TOKEN")
-SAAS_ORG = os.getenv("SAAS_ORG")
-SAAS_REPO = os.getenv("SAAS_REPO")
+# --- Config Vars ---
+ON_PREM_BASE_URL = get_env_var("ON_PREM_BASE_URL")
+ON_PREM_TOKEN = get_env_var("ON_PREM_TOKEN")
+ON_PREM_ORG = get_env_var("ON_PREM_ORG")
+ON_PREM_REPO = get_env_var("ON_PREM_REPO")
 
-OUTPUT_CSV = os.getenv("OUTPUT_CSV", "missing_tags.csv")
+SAAS_TOKEN = get_env_var("SAAS_TOKEN")
+SAAS_ORG = get_env_var("SAAS_ORG")
+SAAS_REPO = get_env_var("SAAS_REPO")
 
+OUTPUT_CSV = get_env_var("OUTPUT_CSV", required=False) or "missing_tags.csv"
 
-# --- GitHub Authentication ---
+# --- Debug Dump ---
+print("\n🔍 DEBUG: Loaded Config")
+print(f"ON_PREM_ORG: {ON_PREM_ORG} | REPO: {ON_PREM_REPO} | BASE_URL: {ON_PREM_BASE_URL}")
+print(f"SAAS_ORG: {SAAS_ORG} | REPO: {SAAS_REPO}")
+print(f"SAAS_TOKEN: {'Set' if SAAS_TOKEN else 'MISSING'}")
+print(f"ON_PREM_TOKEN: {'Set' if ON_PREM_TOKEN else 'MISSING'}")
+print(f"Output CSV: {OUTPUT_CSV}\n")
+
+# --- GitHub Auth ---
 def authenticate_github(token, base_url=None):
+    if not token or len(token.strip()) < 10:
+        raise ValueError("GitHub token is missing or too short.")
     if base_url:
-        return Github(base_url=base_url, auth=Auth.Token(token))
-    return Github(token)
+        return Github(base_url=base_url, auth=Auth.Token(token.strip()))
+    return Github(token.strip())
 
-
-def validate_auth(token, org_name, base_url=None):
-    token = token.strip() if token else None
-
-    print("🔍 DEBUG | base_url:", base_url)
-    print("🔍 DEBUG | org_name:", org_name)
-    print("🔍 DEBUG | token preview:", token[:5] if token else "None")
-
-    if not token or len(token) < 10:
-        raise ValueError(f"❌ GitHub token is missing or malformed for {'SaaS' if not base_url else 'on-prem'}")
+def validate_auth(token, org_name, base_url=None, label="Unknown"):
+    logging.info(f"🔐 Authenticating with {label} GitHub...")
+    print(f"  ➤ TOKEN preview ({label}): {token[:6]}...")
+    print(f"  ➤ ORG: {org_name}")
+    print(f"  ➤ BASE_URL: {base_url or 'https://api.github.com'}")
 
     try:
         gh = authenticate_github(token, base_url)
         org = gh.get_organization(org_name)
+        logging.info(f"✅ Authenticated to {label} GitHub.")
         return gh, org
     except BadCredentialsException:
-        raise ValueError(f"❌ Invalid GitHub credentials for {base_url or 'SaaS'}")
+        raise ValueError(f"❌ Invalid credentials for {label} GitHub.")
     except Exception as e:
-        raise ValueError(f"❌ Error authenticating with {base_url or 'SaaS'}: {e}")
+        raise ValueError(f"❌ Error authenticating with {label} GitHub: {e}")
 
-
-# --- Tag Fetch & Comparison ---
-def fetch_tags(repo):
-    return {tag.name: tag.commit.sha for tag in repo.get_tags()}
-
+# --- Tag Utilities ---
+def fetch_tags(repo, label):
+    logging.info(f"🔄 Fetching tags from {label} repo: {repo.full_name}")
+    tags = {tag.name: tag.commit.sha for tag in repo.get_tags()}
+    logging.info(f"📦 {len(tags)} tags found in {label}.")
+    return tags
 
 def compare_tags(source_tags, target_tags):
     return [(name, sha) for name, sha in source_tags.items() if name not in target_tags]
 
-
 def write_csv(missing_tags):
+    logging.info(f"📝 Writing output to {OUTPUT_CSV}...")
     with open(OUTPUT_CSV, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Missing Tag Name", "Commit SHA"])
         for name, sha in missing_tags:
             writer.writerow([name, sha])
-    logging.info(f"CSV report written to {OUTPUT_CSV}")
-
+    logging.info(f"✅ CSV report saved.")
 
 # --- Main Logic ---
 def verify_tags():
     try:
-        logging.info("Authenticating with GitHub instances...")
+        logging.info("🚀 Starting tag verification...")
 
-        on_prem_g, _ = validate_auth(ON_PREM_TOKEN, ON_PREM_ORG, ON_PREM_BASE_URL)
-        saas_g, _ = validate_auth(SAAS_TOKEN, SAAS_ORG)
+        # Authenticate
+        on_prem_g, _ = validate_auth(ON_PREM_TOKEN, ON_PREM_ORG, ON_PREM_BASE_URL, label="ON-PREM")
+        saas_g, _ = validate_auth(SAAS_TOKEN, SAAS_ORG, None, label="SAAS")
 
-        logging.info("Fetching repositories...")
+        # Fetch repos
+        logging.info("📁 Accessing repositories...")
         on_prem_repo = on_prem_g.get_repo(f"{ON_PREM_ORG}/{ON_PREM_REPO}")
         saas_repo = saas_g.get_repo(f"{SAAS_ORG}/{SAAS_REPO}")
+        logging.info("✅ Repositories loaded.")
 
-        logging.info("Fetching tags...")
-        on_prem_tags = fetch_tags(on_prem_repo)
-        saas_tags = fetch_tags(saas_repo)
+        # Fetch and compare tags
+        on_prem_tags = fetch_tags(on_prem_repo, "ON-PREM")
+        saas_tags = fetch_tags(saas_repo, "SAAS")
 
         missing_tags = compare_tags(on_prem_tags, saas_tags)
 
         if missing_tags:
-            logging.warning(f"{len(missing_tags)} tags are missing in SaaS.")
+            logging.warning(f"⚠️ {len(missing_tags)} tag(s) missing in SaaS.")
         else:
-            logging.info("All tags are present in both repositories.")
+            logging.info("🎉 All tags match between ON-PREM and SAAS.")
 
         write_csv(missing_tags)
 
     except (RateLimitExceededException, RequestException) as e:
-        logging.error(f"GitHub API error: {e}")
-    except ValueError as e:
-        logging.error(e)
+        logging.error(f"🌐 GitHub API/network error: {e}")
+    except ValueError as ve:
+        logging.error(str(ve))
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
+        logging.error(f"💥 Unexpected error: {e}")
 
-
-# --- Entry Point ---
+# --- Run ---
 if __name__ == "__main__":
     verify_tags()
