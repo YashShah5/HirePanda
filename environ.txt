@@ -1,13 +1,20 @@
-# ON-PREM GitHub Enterprise (self-hosted)
-ON_PREM_BASE_URL=https://github-stage.qu.com/api/v3
-ON_PREM_TOKEN=ghp_your_onprem_token_here
-ON_PREM_ORG=error-logging
-ON_PREM_REPO=has-pages
+flowchart TD
+    A[Start: Run Script] --> B[Load environment variables from .env]
+    B --> C[Authenticate to source GitHub (SOURCE_TOKEN + ORG)]
+    B --> D[Authenticate to destination GitHub (DESTINATION_TOKEN + ORG)]
 
-# SaaS GitHub
-SAAS_TOKEN=ghp_your_saas_token_here
-SAAS_ORG=qcom-tag-test
-SAAS_REPO=has_pages
+    C --> E[Fetch SOURCE repo]
+    D --> F[Fetch DESTINATION repo]
 
-# Output File
-OUTPUT_CSV=missing_tags.csv
+    E --> G[Fetch tags from source repo]
+    F --> H[Fetch tags from destination repo]
+
+    G --> I[Compare tag names]
+    H --> I
+
+    I --> J{Are there missing tags?}
+    J -- Yes --> K[Write missing tags to CSV]
+    J -- No --> L[Log: All tags present]
+
+    K --> M[End]
+    L --> M[End]
