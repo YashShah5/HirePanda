@@ -1,17 +1,17 @@
 import os
-import logging
 import csv
+import logging
 from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException
 from requests.exceptions import RequestException
 from dotenv import load_dotenv
 
-# --- Load environment variables from .env ---
+# --- Load .env ---
 load_dotenv()
 
-# --- Logging Config ---
+# --- Logging Setup ---
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# --- Config values from .env ---
+# --- Load Config Values ---
 ON_PREM_BASE_URL = os.getenv("ON_PREM_BASE_URL")
 ON_PREM_TOKEN = os.getenv("ON_PREM_TOKEN")
 ON_PREM_ORG = os.getenv("ON_PREM_ORG")
@@ -23,15 +23,20 @@ SAAS_REPO = os.getenv("SAAS_REPO")
 
 OUTPUT_CSV = os.getenv("OUTPUT_CSV", "missing_tags.csv")
 
-# --- Helper Functions ---
+
+# --- GitHub Authentication ---
 def authenticate_github(token, base_url=None):
     if base_url:
         return Github(base_url=base_url, auth=Auth.Token(token))
     return Github(token)
 
+
 def validate_auth(token, org_name, base_url=None):
     try:
         gh = authenticate_github(token, base_url)
+        # Debug: confirm token is loaded correctly
+        if not token:
+            raise ValueError(f"GitHub token is missing for {'SaaS' if not base_url else 'on-prem'}")
         org = gh.get_organization(org_name)
         return gh, org
     except BadCredentialsException:
@@ -39,11 +44,15 @@ def validate_auth(token, org_name, base_url=None):
     except Exception as e:
         raise ValueError(f"Error authenticating with {base_url or 'SaaS'}: {e}")
 
+
+# --- Tag Fetch & Comparison ---
 def fetch_tags(repo):
     return {tag.name: tag.commit.sha for tag in repo.get_tags()}
 
+
 def compare_tags(source_tags, target_tags):
     return [(name, sha) for name, sha in source_tags.items() if name not in target_tags]
+
 
 def write_csv(missing_tags):
     with open(OUTPUT_CSV, mode='w', newline='') as file:
@@ -53,7 +62,8 @@ def write_csv(missing_tags):
             writer.writerow([name, sha])
     logging.info(f"CSV report written to {OUTPUT_CSV}")
 
-# --- Main Execution ---
+
+# --- Main Logic ---
 def verify_tags():
     try:
         logging.info("Authenticating with GitHub instances...")
@@ -84,6 +94,7 @@ def verify_tags():
         logging.error(e)
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
+
 
 # --- Entry Point ---
 if __name__ == "__main__":
