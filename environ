@@ -1,0 +1,13 @@
+# ON-PREM GitHub Enterprise (self-hosted)
+ON_PREM_BASE_URL=https://github-stage.qu.com/api/v3
+ON_PREM_TOKEN=ghp_your_onprem_token_here
+ON_PREM_ORG=error-logging
+ON_PREM_REPO=has-pages
+
+# SaaS GitHub
+SAAS_TOKEN=ghp_your_saas_token_here
+SAAS_ORG=qcom-tag-test
+SAAS_REPO=has_pages
+
+# Output File
+OUTPUT_CSV=missing_tags.csv
