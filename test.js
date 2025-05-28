@@ -35,17 +35,23 @@ def authenticate_github(token, base_url=None):
 
 
 def validate_auth(token, org_name, base_url=None):
-    if not token:
-        raise ValueError(f" GitHub token is missing for {'SaaS' if not base_url else 'on-prem'}")
+    token = token.strip() if token else None
+
+    print("🔍 DEBUG | base_url:", base_url)
+    print("🔍 DEBUG | org_name:", org_name)
+    print("🔍 DEBUG | token preview:", token[:5] if token else "None")
+
+    if not token or len(token) < 10:
+        raise ValueError(f"❌ GitHub token is missing or malformed for {'SaaS' if not base_url else 'on-prem'}")
 
     try:
         gh = authenticate_github(token, base_url)
         org = gh.get_organization(org_name)
         return gh, org
     except BadCredentialsException:
-        raise ValueError(f" Invalid GitHub credentials for {base_url or 'SaaS'}")
+        raise ValueError(f"❌ Invalid GitHub credentials for {base_url or 'SaaS'}")
     except Exception as e:
-        raise ValueError(f" Error authenticating with {base_url or 'SaaS'}: {e}")
+        raise ValueError(f"❌ Error authenticating with {base_url or 'SaaS'}: {e}")
 
 
 # --- Tag Fetch & Comparison ---
