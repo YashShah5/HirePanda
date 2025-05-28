@@ -1,44 +1,42 @@
-h1. High Level Plan for Medium Complexity Orgs
+## 🧭 New Hire and Intern Onboarding Guide
 
-h2. Quick Navigation
+| **Title** | **Link** | **Description** |
+|-----------|----------|-----------------|
+| Intern Calendar and Checklist | go/interns | Dedicated intern cohort page with key dates and to-dos. |
+| Benefits Overview | go/benefits \| go/qfitme | Overview of intern pay, benefits, and wellness options. |
+| Learn More About Qualcomm | go/learn | Company mission, values, and history. |
+| Join a Club Here | go/clubs | Explore employee clubs. (Note: info may be outdated—refer to the club Excel sheet for latest updates.) |
+| IT Help | go/ithelp | Get tech support for devices, accounts, and access. |
+| Charge Your EV for Free | go/evdrivers | Free EV charging resources for Qualcomm employees. |
+| Free Textbooks and Web Seminars | go/OReilly | Access to O’Reilly resources for technical topics and certifications. |
+| Appreciate an Employee | go/thankyou | Use the ThankQ portal to award appreciation tokens and redeem gifts. |
+| Ship Items to Lockers / Building | go/shipping | Set up shipping to your office locker. |
+| New Hire Portal | go/newhire | Sign up for Luxer Lockers and access essential onboarding steps. |
+| Fun Perks | [Fun Perks Page](https://example.com) | Discounts on attractions, parks, and movies. |
+| Equipment Checkout | Team Equipment Checkout \| QREF | Request work devices or accessories. |
 
-* \[Medium Criteria Summary|#Medium Criteria Summary]
-* \[Filter Reference Table|#Filter Reference Table]
+## 🗂 Project Notes and Events
 
-h2. Medium Criteria Summary
-A GitHub repository may be classified as "Medium Complexity" if it meets most of the following:
+| **Title** | **Link** | **Description** |
+|-----------|----------|-----------------|
+| How to Query in MongoDB | SW Eng Compute Confluence | Common MongoDB queries and syntax tips. |
+| Join as an Admin | github.admin - A List Manager | Request admin access for internal tools. |
+| Lists to Be Added / Join | SW Eng Compute Confluence | Add yourself to internal email lists and projects. |
+| Export and Migrate GitHub Data | GitHub Enterprise Docs | Step-by-step on exporting from GitHub Server to GitHub Cloud. |
+| Migration Key Docs | GitHub Enterprise Docs | Understanding limitations and best practices for migration. |
+| Migration Tickets | [Jira Board](https://jira.qualcomm.com/...) | Track open tasks and issues tied to migration. |
+| PDLIM Jira Guidelines | SW Eng Compute Confluence | Scrum and project management practices. |
+| Access to Workgroup | pdlim.github.workgroup - A List Manager | Join project workgroups. |
+| GitHub Tags | GitHub Enterprise Docs | REST API reference for tag management. |
+| Commit Message Standards | tbaggery - Git Best Practices | Best practices for writing meaningful commit messages. |
+| Migration SOP | Confluence Migration Doc | Qualcomm steps for migrating to GitHub SaaS. |
 
-| *Metric*       | *Threshold / Condition* |
-| -------------- | ----------------------- |
-| Total Metadata | < 20,500                |
-| Wiki           | Exists, no attachments  |
-| Issues         | Exists, no attachments  |
-| Pull Requests  | ≤ 10 open PRs           |
-| Repo Size      | < 20 GB                 |
-| Commit Size    | < 2 GB                  |
-| Releases       | < 100 MB total assets   |
+## 📚 Resources I Found Helpful
 
-These thresholds are designed to balance performance and ease of automation. Orgs that fall within these limits are typically manageable without deep manual intervention.
-
-h2. Filter Reference Table
-
-| *Filter*           | *Why It’s Flagged*                         | *False Positive Example*                      | *Notes*                                             |
-| ------------------ | ------------------------------------------ | --------------------------------------------- | --------------------------------------------------- |
-| Size Filtering     | Repo is large; may slow transfer/migration | A few large binary assets like PDFs or videos | Use Git LFS if needed; ignore inactive binary bloat |
-| Branch Count       | >50 branches may imply complexity          | Mostly inactive branches                      | Clean up with `git branch --merged`                 |
-| Commit Count       | >400 implies heavy history                 | Frequent bot commits                          | Use `git shortlog -sn` to audit                     |
-| Webhooks           | Hooks require reconfiguration              | One unused webhook from years ago             | Remove unused hooks before migration                |
-| Runners            | Self-hosted runners may not port easily    | Runner registered but never used              | Check runner job history                            |
-| Actions            | Workflows need validation and secrets      | Linting-only or disabled workflows            | Look in `.github/workflows/`                        |
-| Branch Protections | Require recreation in SaaS                 | Default rule on unused branch                 | List protections using GitHub API                   |
-| Issues             | May require data preservation              | Issues exist but have no attachments          | Use external issue tracking tools                   |
-| Pages              | Might need DNS/config porting              | Static site with default `.github.io` domain  | Low migration risk if unused                        |
-| Releases           | Tagged builds may have large assets        | One old release with no assets                | Check total artifact size < 100MB                   |
-| Wiki               | Needs to be migrated manually              | Empty wiki or 1-page wiki                     | Clone wiki repo via Git                             |
-| Binary Files       | Git can’t delta-compress them well         | One image or PDF added years ago              | Enable Git LFS for frequent binaries                |
-| Pull Requests      | Review state & comments must be preserved  | All PRs closed or inactive for years          | Export summaries instead of full data               |
-
-h2. Summary
-This medium complexity tier captures edge cases that were previously misclassified as "complex" but do not need high-touch manual effort. Use the table above to guide repo evaluation and prioritize migration sequencing.
-
-*Add visual diagrams and examples below if needed.*
+| **Title** | **Link** | **Description** |
+|-----------|----------|-----------------|
+| Deep Dive into Git | Pluralsight \| YouTube | Recommended if Git was a new objective for you. |
+| Jenkins Jobs and CI/CD Pipelines | YouTube | Basics of automation and pipeline workflows. |
+| GitHub Conversions | Docs \| Ask Copilot | Documentation + Copilot support. |
+| GitHub Actions & Docker | YouTube | Intro to containerization and automated workflows. |
+| MongoDB Query Builder | YouTube \| Docs | Basics of MongoDB querying and logic. |
