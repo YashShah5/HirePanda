@@ -1,0 +1,47 @@
+# Postflight Tag Validation
+
+`tag-validation.py`
+
+This script is used to **compare tags** between a **source** and **destination** GitHub repository and identify any tags that are missing in the destination repository. It uses environment variables to configure authentication and repo details, fetches tags from each repository, and writes missing tags to a CSV file.
+
+---
+
+## Required Scopes for Tokens
+
+The script requires two tokens: `SOURCE_TOKEN` and `DESTINATION_TOKEN`. These tokens must have the following scopes:
+
+- **repo**: Full control of private repositories (to fetch tags from source and destination).  
+- **admin:org**: Full control of organizations to fetch organization details.
+
+---
+
+## Configuration
+
+Configuration is done via environment variables. These should be defined in a `.env` file:
+
+- `SOURCE_BASE_URL`: (Optional) Base URL for GitHub Enterprise for the source repo.  
+- `SOURCE_TOKEN`: GitHub token for the source repository.  
+- `SOURCE_ORG`: Organization name of the source repository.  
+- `SOURCE_REPO`: Name of the source repository.  
+- `DESTINATION_TOKEN`: GitHub token for the destination repository.  
+- `DESTINATION_ORG`: Organization name of the destination repository.  
+- `DESTINATION_REPO`: Name of the destination repository.  
+- `OUTPUT_CSV`: Name of the output CSV file (default: `missing_tags.csv`).
+
+---
+
+## Functions
+
+- **authenticate_github(token, base_url)**: Authenticates to GitHub with the provided token.  
+- **validate_auth(token, org_name, base_url, label)**: Validates authentication for the given org and label.  
+- **fetch_tags(repo)**: Fetches all tags from a given repository.  
+- **compare_tags(source_tags, destination_tags)**: Compares tags from source and destination, returning missing tags.  
+- **write_csv(missing_tags)**: Writes missing tags to a CSV file.  
+- **verify_tags()**: Main function that runs the verification process and writes missing tags to CSV.
+
+---
+
+## Running the Script
+
+```bash
+python3 tag-validation.py
