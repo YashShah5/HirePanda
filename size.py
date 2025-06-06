@@ -5,43 +5,41 @@ import csv
 import logging
 from github import Github, Auth, BadCredentialsException
 
-# Constants for environment variables
-GHES_BASE_URL = os.getenv('GHES_BASE_URL')
-GHES_DEFAULT_ORG = os.getenv('GHES_ORG')
-GHES_TOKEN = os.getenv('GHES_TOKEN')
+# Load environment variables
+GHES_BASE_URL = os.getenv('GHES_BASE_URL', '')
+GHES_ORG = os.getenv('GHES_ORG', '')
+GHES_TOKEN = os.getenv('GHES_TOKEN', '')
 
-# Logging configuration
+# Set up basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def validate_ghes_auth():
     """
-    Validates GHES authentication and returns the authenticated GitHub instance.
+    Validate GitHub authentication and return the Github instance.
     """
     try:
         auth = Auth.Token(GHES_TOKEN)
         g = Github(base_url=GHES_BASE_URL, auth=auth)
-        org = g.get_organization(GHES_DEFAULT_ORG)  # Check if organization exists
-        logging.info(f"Authenticated with GHES. Organization: {org.login}")
+        org = g.get_organization(GHES_ORG)
+        logging.info(f"Connected to GHES. Organization: {org.login}")
         return g
     except BadCredentialsException:
-        raise ValueError("Invalid GHES credentials. Please check your token and organization name.")
+        raise ValueError("Bad GitHub token or org. Check your .env file.")
     except Exception as e:
-        raise ValueError(f"Error authenticating with GHES: {e}")
+        raise ValueError(f"Problem connecting to GHES: {e}")
 
 
 def check_repo_size(repo):
     """
-    Checks the repository size and classifies it.
-    Returns repo size (MB), classification, and preflight check result.
+    Get the size of a repository and classify it.
     """
     try:
-        # GitHub API gives size in KB
         size_kb = repo.size
-        size_mb = size_kb / 1024  # Convert to MB
-        size_gb = size_mb / 1024  # Convert to GB
+        size_mb = size_kb / 1024
+        size_gb = size_mb / 1024
 
-        # Classification logic
+        # Classify the repo
         if size_gb < 10:
             classification = 'Simple'
         elif 10 <= size_gb <= 20:
@@ -49,40 +47,37 @@ def check_repo_size(repo):
         else:
             classification = 'Complex'
 
-        logging.info(f"Repo: {repo.name}, Size: {size_gb:.2f} GB, Classification: {classification}")
-
+        logging.info(f"{repo.name} - {size_gb:.2f} GB - {classification}")
         return round(size_mb, 2), classification, 'Pass'
     except Exception as e:
-        logging.error(f"Error checking size for repository {repo.name}: {e}")
-        return 0, 'Unknown', 'Fail'
+        logging.error(f"Could not check size for {repo.name}: {e}")
+        return 0.0, 'Unknown', 'Fail'
 
 
 def main():
+    """
+    Main function that runs the whole process.
+    """
     try:
         # Authenticate and get repos
         ghes = validate_ghes_auth()
-        org = ghes.get_organization(GHES_DEFAULT_ORG)
+        org = ghes.get_organization(GHES_ORG)
         repos = org.get_repos()
 
-        # Prepare CSV report
-        csv_report_filename = f"repo_size_report_{GHES_DEFAULT_ORG}.csv"
-        with open(csv_report_filename, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
+        # Create CSV report
+        csv_filename = f"repo_size_report_{GHES_ORG}.csv"
+        with open(csv_filename, 'w', newline='') as f:
+            writer = csv.writer(f)
             writer.writerow(["Repository", "Size (MB)", "Classification", "Preflight Check Result"])
 
             for repo in repos:
-                size_mb, classification, check_result = check_repo_size(repo)
-                writer.writerow([repo.name, size_mb, classification, check_result])
+                size_mb, classification, result = check_repo_size(repo)
+                writer.writerow([repo.name, size_mb, classification, result])
 
-        logging.info(f"Repo size check completed. Report generated: {csv_report_filename}")
-        return True
+        logging.info(f"Done. Report is in {csv_filename}")
 
-    except ValueError as e:
-        logging.error(f"Validation error: {e}")
-        return False
     except Exception as e:
-        logging.error(f"Overall process encountered an error: {e}")
-        return False
+        logging.error(f"Something went wrong: {e}")
 
 
 if __name__ == "__main__":
