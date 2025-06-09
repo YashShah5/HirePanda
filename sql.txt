@@ -1,8 +1,9 @@
 {
   complexity_score: "Complex",
   raw_size_bytes: { $lt: 21474836480 },
+  has_pages: true,
   $or: [
-    { "complexity_factors.has_webhooks": { $ne: "Simple" } },
-    { "complexity_factors.has_webhooks": { $exists: false } }
+    { has_webhooks: { $exists: false } },
+    { has_webhooks: false }
   ]
 }
