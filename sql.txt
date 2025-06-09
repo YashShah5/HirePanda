@@ -1,0 +1,8 @@
+db.collection.find({
+  complexity_score: "Complex",
+  raw_size_bytes: { $lt: 21474836480 },
+  $or: [
+    { has_webhooks: { $exists: false } },
+    { has_webhooks: false }
+  ]
+})
