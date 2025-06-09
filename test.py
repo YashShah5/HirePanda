@@ -1,20 +1,14 @@
-# tag-validation.py
+# tag-validation-org-level.py
 """
-Compares GitHub tags between a source and destination repository.
-Outputs any missing tags in a CSV file.
-
-TODO
-- Create README
-- make "def compare_tags" more readable --> less intricate more top down/expand the lines
-- add type safety
-- arrow functions --> function annotations
+Compares tags for all repositories in a GitHub organization (source vs. destination).
+Outputs any missing tags to a CSV file.
 """
 
 import os
 import csv
 import logging
 import traceback
-from typing import Optional, Dict
+from typing import Dict, Optional
 from github import (
     Github,
     Auth,
@@ -39,13 +33,11 @@ logging.basicConfig(
 SOURCE_BASE_URL: Optional[str] = os.getenv("SOURCE_BASE_URL")
 SOURCE_TOKEN: Optional[str] = os.getenv("SOURCE_TOKEN")
 SOURCE_ORG: Optional[str] = os.getenv("SOURCE_ORG")
-SOURCE_REPO: Optional[str] = os.getenv("SOURCE_REPO")
 
 DESTINATION_TOKEN: Optional[str] = os.getenv("DESTINATION_TOKEN")
 DESTINATION_ORG: Optional[str] = os.getenv("DESTINATION_ORG")
-DESTINATION_REPO: Optional[str] = os.getenv("DESTINATION_REPO")
 
-OUTPUT_CSV: str = os.getenv("OUTPUT_CSV", "missing_tags.csv")
+OUTPUT_CSV: str = os.getenv("OUTPUT_CSV", "missing_tags_report.csv")
 
 
 # --- GitHub Authentication ---
@@ -76,47 +68,41 @@ def validate_auth(
         raise ValueError(f"Error authenticating with {label}: {e}")
 
 
-# --- Tag Fetch & Comparison ---
+# --- Fetch tags from repo ---
 def fetch_tags(repo: Repository.Repository) -> Dict[str, str]:
     logging.info(f"Fetching tags from repo: {repo.full_name}")
     return {tag.name: tag.commit.sha for tag in repo.get_tags()}
 
 
+# --- Compare tags ---
 def compare_tags(
     source_tags: Dict[str, str],
     destination_tags: Dict[str, str]
 ) -> Dict[str, str]:
-    """
-    Compares tags between source and destination repos.
-    Returns a dictionary of tags present in source but missing in destination.
-    """
     missing_tags: Dict[str, str] = {}
-
-    # Iterate through each tag in the source
     for name, sha in source_tags.items():
-        # Check if this tag is not in the destination
         if name not in destination_tags:
-            # Add to the missing tags dictionary
             missing_tags[name] = sha
-
     return missing_tags
 
 
-def write_csv(missing_tags: Dict[str, str]) -> None:
-    logging.info(f"Writing missing tags to CSV: {OUTPUT_CSV}")
+# --- Write missing tags to CSV ---
+def write_csv(missing_tag_data: list[dict]) -> None:
+    logging.info(f"Writing missing tags report to CSV: {OUTPUT_CSV}")
     with open(OUTPUT_CSV, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["Missing Tag Name", "Commit SHA"])
-        for name, sha in missing_tags.items():
-            writer.writerow([name, sha])
+        writer.writerow(["Repository Name", "Missing Tag Name", "Commit SHA"])
+        for row in missing_tag_data:
+            writer.writerow([row["repo"], row["tag"], row["sha"]])
     logging.info("CSV write complete.")
 
 
-# --- Main Logic ---
-def verify_tags() -> None:
+# --- Main Logic: Verify tags for all repos in the org ---
+def verify_org_tags() -> None:
     try:
-        logging.info("Starting tag verification...")
+        logging.info("Starting org-level tag verification...")
 
+        # Authenticate to GitHub for source and destination
         source_gh: Github = validate_auth(
             SOURCE_TOKEN, SOURCE_ORG, SOURCE_BASE_URL, label="source"
         )
@@ -124,24 +110,42 @@ def verify_tags() -> None:
             DESTINATION_TOKEN, DESTINATION_ORG, label="destination"
         )
 
-        logging.info("Loading repositories...")
-        source_repo: Repository.Repository = source_gh.get_repo(f"{SOURCE_ORG}/{SOURCE_REPO}")
-        destination_repo: Repository.Repository = destination_gh.get_repo(f"{DESTINATION_ORG}/{DESTINATION_REPO}")
-        logging.info("Repositories loaded successfully.")
+        # Get org objects
+        source_org = source_gh.get_organization(SOURCE_ORG)
+        destination_org = destination_gh.get_organization(DESTINATION_ORG)
 
-        source_tags: Dict[str, str] = fetch_tags(source_repo)
-        destination_tags: Dict[str, str] = fetch_tags(destination_repo)
+        # Get list of repos
+        source_repos = {repo.name: repo for repo in source_org.get_repos()}
+        destination_repos = {repo.name: repo for repo in destination_org.get_repos()}
+        logging.info(f"Found {len(source_repos)} repos in source org.")
+        logging.info(f"Found {len(destination_repos)} repos in destination org.")
 
-        missing_tags: Dict[str, str] = compare_tags(source_tags, destination_tags)
+        # Compare tags for each repo present in both orgs
+        missing_tag_data: list[dict] = []
 
-        if missing_tags:
-            logging.warning(
-                f"{len(missing_tags)} tag(s) are missing in the destination."
-            )
-        else:
-            logging.info("All tags are present in both repositories.")
+        for repo_name, source_repo in source_repos.items():
+            if repo_name not in destination_repos:
+                logging.warning(f"Repo '{repo_name}' not found in destination. Skipping.")
+                continue
 
-        write_csv(missing_tags)
+            destination_repo = destination_repos[repo_name]
+            source_tags = fetch_tags(source_repo)
+            destination_tags = fetch_tags(destination_repo)
+
+            missing_tags = compare_tags(source_tags, destination_tags)
+            if missing_tags:
+                for name, sha in missing_tags.items():
+                    missing_tag_data.append({
+                        "repo": repo_name,
+                        "tag": name,
+                        "sha": sha
+                    })
+                logging.warning(f"{len(missing_tags)} tag(s) missing in '{repo_name}'.")
+            else:
+                logging.info(f"All tags present in '{repo_name}'.")
+
+        # Write the final report to CSV
+        write_csv(missing_tag_data)
 
     except (RateLimitExceededException, RequestException) as e:
         logging.error(f"GitHub API error: {e}")
@@ -154,4 +158,4 @@ def verify_tags() -> None:
 
 # --- Entry Point ---
 if __name__ == "__main__":
-    verify_tags()
+    verify_org_tags()
