@@ -87,3 +87,35 @@ https://github.com/qcom-github-admin/migration-scripts/actions/runs/15567474345
 - Let me know if any adjustments or additions are needed!
 
 
+
+
+
+
+
+
+
+### PR Summary
+
+**Story:** https://jira-dc.qualcomm.com/jira/browse/PDLMGIT-230
+
+**What:**  
+- Adds a script to check repo sizes across the entire organization  
+- Classifies each repo based on size:  
+  - Simple: <10GB (10240MB)  
+  - Medium: 10–20GB (10240–20480MB)  
+  - Complex: >20GB (20480MB+)  
+- Generates a CSV with:  
+  - Repository name  
+  - Size (MB)  
+  - Classification  
+  - Preflight Check Result (Pass/Fail)
+
+**Why:**  
+- Quickly identifies large repos before migration  
+- CSV can be shared with other teams  
+- Logs any errors for easier follow-up
+
+**Example CSV output:**
+
+
+
