@@ -45,3 +45,45 @@ Configuration is done via environment variables. These should be defined in a `.
 
 ```bash
 python3 tag-validation.py
+
+
+
+
+
+
+
+
+
+
+
+
+### Story
+https://jira-dc.qualcomm.com/jira/browse/PDLMGIT-261
+
+### Description
+This PR adds a robust org-level tag validation script. The script compares the number of tags in each repository within the source and destination GitHub organizations. It ensures that all tags present in the source org are also present in the destination org.
+
+### Key Features
+- Authenticates to GitHub for both source and destination organizations.
+- Iterates over all repositories in the source org.
+- Compares tags for each repo and identifies missing tags in the destination.
+- Logs the results and writes a detailed CSV report with any missing tags.
+- Includes enhanced error handling and improved logging for clarity.
+
+### Why?
+This script ensures that after migration, no tags are lost and all tags are consistently present across both source and destination organizations.
+
+### Migration Status
+https://github.com/qcom-github-admin/migration-scripts/actions/runs/15567474345
+
+### Sample CSV Output
+| Repository Name     | Missing Tag Name | Commit SHA                               |
+|----------------------|------------------|------------------------------------------|
+| pages-tag-check     | 1.0.1            | e7b94ef318e84dd15d4cf4fcf19c7f3a2cb1b    |
+| commits-pass        | tag-102.697f...  | 697f109d987a1cb7b19a942a5ec1ca60b0a01d72 |
+
+### Next Steps
+- Please confirm that this script meets migration goals and standards.
+- Let me know if any adjustments or additions are needed!
+
+
