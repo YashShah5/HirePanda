@@ -15,68 +15,60 @@ headers = {
     "Accept": "application/vnd.github+json"
 }
 
-def get_org_repos(org_name):
-    repos = []
-    page = 1
+def check_repo_disabled(org, repo_name):
+    url = f"{BASE_URL}/repos/{org}/{repo_name}"
+    response = requests.get(url, headers=headers)
 
-    while True:
-        url = f"{BASE_URL}/orgs/{org_name}/repos?per_page=100&page={page}"
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            print(f"Error fetching repos: {response.status_code}")
-            return repos
-
+    if response.status_code == 404:
+        print(f"Repo: {repo_name} - Status: 404 (Assumed Disabled)")
+        return True
+    elif response.status_code == 200:
         data = response.json()
-        if not data:
-            break
+        disabled = data.get("disabled", False)
+        print(f"Repo: {repo_name} - Disabled: {disabled}")
+        return disabled
+    else:
+        print(f"Repo: {repo_name} - Unexpected Status: {response.status_code} (Assumed Enabled)")
+        return False
 
-        for repo in data:
-            repos.append({
-                "name": repo["name"],
-                "disabled": repo.get("disabled", False)
-            })
+def read_repo_list(csv_path):
+    repo_names = []
+    with open(csv_path, newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            repo_names.append(row["repo_name"])
+    return repo_names
 
-        page += 1
-
-    return repos
-
-def write_to_csv(repos, org_complex):
-    filename = f"disabled_repos_report.csv"
-    with open(filename, mode="w", newline="") as csvfile:
+def write_csv_output(repo_results, org_complex):
+    output_file = "disabled_repos_report.csv"
+    with open(output_file, mode="w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Repository Name", "Disabled"])
-        for repo in repos:
-            writer.writerow([repo["name"], repo["disabled"]])
+        for repo_name, disabled in repo_results.items():
+            writer.writerow([repo_name, disabled])
         writer.writerow([])
-        writer.writerow(["Org Marked Complex", org_complex])
-
-    print(f"\n📁 CSV saved as: {filename}")
-
-def check_for_disabled_repos(repos):
-    has_disabled = False
-    for repo in repos:
-        print(f"Checking repo: {repo['name']} - Disabled: {repo['disabled']}")
-        if repo['disabled']:
-            has_disabled = True
-    return has_disabled
+        writer.writerow(["Org Marked Complex", "Yes" if org_complex else "No"])
+    print(f"\n CSV saved as: {output_file}")
 
 def main():
-    print(f"Fetching repos for org: {ORG_NAME}")
-    repos = get_org_repos(ORG_NAME)
+    print(f"Starting check for org: {ORG_NAME}")
 
-    if not repos:
-        print("No repos found or failed to fetch.")
-        return
+    repo_names = read_repo_list("repos.csv")
+    repo_results = {}
+    has_disabled = False
 
-    print(f"Total repos checked: {len(repos)}")
-    has_disabled = check_for_disabled_repos(repos)
+    for repo in repo_names:
+        disabled = check_repo_disabled(ORG_NAME, repo)
+        repo_results[repo] = disabled
+        if disabled:
+            has_disabled = True
 
     if has_disabled:
-        print(f"\n🔴 Org '{ORG_NAME}' is marked COMPLEX due to disabled repositories.")
+        print(f"\n Org '{ORG_NAME}' is marked COMPLEX due to disabled repos.")
     else:
-        print(f"\n🟢 Org '{ORG_NAME}' has no disabled repos — NOT complex.")
+        print(f"\n Org '{ORG_NAME}' has no disabled repos — NOT complex.")
 
-    write_to_csv(repos, "Yes" if has_disabled else "No")
+    write_csv_output(repo_results, has_disabled)
 
 if __name__ == "__main__":
     main()
