@@ -1,0 +1,78 @@
+📅 Meeting Notes: Forking Strategy Discussion
+
+Date: [Insert Date of Meeting]
+Attendees: Yash Shah, Tech Lead
+Topic: Proof of Concept for Forking – GitHub SaaS Enablement
+🧭 Objective
+
+Discuss and clarify the scope of the “Proof of Concept for Forking” Jira story (PDLMGIT-312) and outline expectations for testing, policy evaluation, and a rollout strategy for GitHub SaaS.
+📝 Key Discussion Points
+1. Current State
+
+    Qualcomm engineers currently fork repos and raise PRs via forks in GitHub on-prem.
+
+    Engineers want to maintain the same workflow on GitHub SaaS.
+
+2. GitHub SaaS Forking Limitations
+
+    GitHub SaaS restricts fork targets:
+
+        ✅ Fork within the same organization
+
+        ❌ No support for personal namespace forks
+
+    On-prem allows personal forking, but SaaS does not due to security/IP constraints.
+
+3. Security Concerns
+
+    Personal namespace forks expose code to public GitHub IP ranges.
+
+    IP whitelisting and access control are not enforceable on personal forks.
+
+    Security team prohibits enabling personal namespace forking.
+
+4. Test Environment Setup (GitHub EMU Test)
+
+    Work must be done in the test instance only, not PROD.
+
+    Policy changes will be tested at the enterprise level in this environment.
+
+✅ Action Items for Yash
+
+    Test the Following Forking Scenarios in GitHub EMU Test:
+
+Forking within the same org
+
+Forking across orgs
+
+    Attempt and document denial of personal namespace forking
+
+Record and Analyze:
+
+Required policy changes for each fork scenario
+
+Risks and limitations (especially for personal forking)
+
+    Confirm whether org-to-org works as expected
+
+Prepare a Strategy Document:
+
+Summarize findings and policy needs
+
+Document risks and constraints
+
+Propose a rollout plan using centralized "forking orgs"
+
+Suggest logical structure (e.g., per business unit) and naming convention
+
+        Consider onboarding guidance for engineers
+
+    Discuss Access to GitHub EMU Test with Rishi, if needed
+
+📌 Agreed Upon Direction
+
+    Qualcomm will move forward with org-to-org forking.
+
+    Central “forking org(s)” will be created to host forks securely.
+
+    Personal namespace forking will not be supported.
