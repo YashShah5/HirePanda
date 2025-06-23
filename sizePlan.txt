@@ -1,0 +1,105 @@
+h1. GitHub Migration Risk Detection: Large File (>400MB) Strategy
+
+h2. Objective
+
+Identify repositories that contain any individual *file > 400MB*, as these break the GitHub SaaS migration portal. This effort is designed to proactively block problematic repositories from progressing in the migration workflow.
+
+---
+
+h2. High-Level Plan
+
+h3. Step 1: Filter Candidates via MongoDB (Pre-screening)
+
+|| Why || Narrow the scanning scope — most repositories are not risky ||
+|| How ||
+* Query MongoDB metadata store for repos where *repo.size > 400MB*
+* Export the result to a CSV list of candidate URLs for downstream analysis
+
+---
+
+h3. Step 2: Precision Scan of Each Repository
+
+|| Why || repo.size includes all content (e.g. history) — we need actual file sizes ||
+|| How ||
+* Clone each repo using `git clone --mirror`
+* Use `git ls-tree` to recursively list file sizes across all branches
+* Flag any individual files > 400MB
+* Output structured CSV with: _repo_url_, _file_path_, _branch_, _file_size_MB_
+
+---
+
+h3. Step 3: Reporting and Automation
+
+* Centralized report: *repo_large_file_report.csv*
+* Include logs for failures, runtime, and performance
+* Trigger alerts on threshold breaches
+* Future: integrate results into validation pipeline before migration
+
+---
+
+h2. What I Learned and Applied from Rishi’s Code
+
+|| Rishi’s Feature || What I Incorporated ||
+| `--depth=1` clone | Optimized scan time and resource usage |
+| `.env` for GitHub token | Standardized secure access for private repositories |
+| CSV output formatting | Aligned with reporting best practices |
+| Use of `tempfile` | Ensures isolated, clean scans |
+| Git logic structure | Based scan logic foundation on `git` commands shown |
+
+_Rishi’s code served as a foundational example — I used it as a base and enhanced it for our >400MB file requirement._
+
+---
+
+h2. Challenges and Considerations
+
+|| Challenge || Description || Mitigation ||
+| Clone Overhead | Cloning thousands of repos is time and bandwidth heavy | Pre-filter with MongoDB metadata |
+| Auth and Rate Limits | GitHub APIs require tokens; some limits may apply | Use `.env` tokens; stagger jobs |
+| False Positives via `repo.size` | Large repo history may not mean large files exist | Scan individual files using `git ls-tree` |
+| Disk Usage from Clones | Local clone of large repos could fill temp space | Use temp directories, clean up immediately |
+| Branch-Specific File Risk | Large files may exist only in non-default branches | Scan *all branches* for total coverage |
+
+---
+
+h2. Sample Output CSV
+
+{code:language=csv}
+repo_url,file_path,branch,file_size_MB
+https://github-test.qualcomm.com/org1/repoA,path/to/file1.mp4,main,488
+https://github-test.qualcomm.com/org1/repoB,,CLONE_FAILED,
+{code}
+
+---
+
+h2. Tools Used
+
+|| Tool || Role ||
+| Python | Core scripting |
+| git | Cloning and branch file listing |
+| dotenv | Secure token handling via `.env` |
+| os.walk / git ls-tree | Directory and blob traversal |
+| CSV | Report generation and downstream ingestion |
+
+---
+
+h2. Next Steps
+
+* Write MongoDB filter to export candidate repos > 400MB
+* Adapt the file scanner to:
+** Accept GitHub repo URLs from CSV
+** Use `.env` token injection
+* Benchmark scanning speed on a sample set of repos
+* Log scan durations, failures, and file counts
+* Propose batch job schedule (weekly/nightly scan pre-migration)
+* (Optional): Pipe results into internal dashboard or MongoDB for visibility
+
+---
+
+h2. Summary
+
+This plan strategically blends *pre-filtering, secure scanning, and structured reporting* to identify migration blockers ahead of time. It scales sensibly and sets up future automation in our validation pipelines.
+
+Let me know if you’d like:
+* A one-slide visual summary
+* A short demo of the scan in action
+* Integration ideas for the migration dashboard
