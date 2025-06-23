@@ -1,0 +1,144 @@
+🧭 Unified Approach Outline for PDLMGIT-308
+
+Goal: Ensure MongoDB health is monitored and auditable, with HA/DR and alerting integrated into Datadog / Splunk for our critical services.
+1. 🧑‍💼 Opening (for either mentor or DBA)
+
+“I’ve taken ownership of PDLMGIT-308, and my focus is on making sure MongoDB’s availability is not a blind spot. I’ve identified 3 critical areas: HA/DR setup, server health alerting, and operational logging. I’m coordinating with both the DBA and internal teams to move this forward.”
+2. 🎯 Problem Framing
+
+Break the story into these sub-problems:
+A. HA/DR
+
+    Goal: Ensure there is a fallback if the primary MongoDB server fails.
+
+    Exploratory Questions:
+
+        “Do we currently have MongoDB HA or DR set up?”
+
+        “If not, what steps are required to enable that?”
+
+        “Do we need to set up replication or clusters?”
+
+        “What recovery time objective (RTO) and recovery point objective (RPO) are realistic here?”
+
+B. Alerting
+
+    Goal: Receive alerts if MongoDB becomes inaccessible.
+
+    Exploratory Questions:
+
+        “Can the DBA team expose health/status metrics (CPU, memory, availability) to us?”
+
+        “What’s the existing process for integrating those into Datadog?”
+
+        “Do we need to configure custom YAMLs for scraping metrics?”
+
+        “Would this be similar to what’s done for GitLab servers?”
+
+C. Logging for Auditing
+
+    Goal: Log important operations (e.g., update/delete) for audit trails.
+
+    Exploratory Questions:
+
+        “Can these logs be captured at the DB server level?”
+
+        “Can they be pushed to Datadog or Splunk?”
+
+        “Are logs retained anywhere today by default?”
+
+3. 🤝 Collaboration & Ownership
+
+Your Role:
+
+    Confirm requirements
+
+    Coordinate across teams (DBA, Datadog, Electron, etc.)
+
+    Raise tickets as needed
+
+    Ensure follow-up happens and gaps are escalated
+
+What You Need from Others:
+
+    DBA: Server setup, monitoring config, feasibility answers
+
+    Electron/Monitoring team: YAML guidance, dashboard support
+-------------------------------------------------------------------------
+
+🧾 Summary: Meeting with Sourajit (Mentor/Guide)
+🎯 Main Objective
+
+To guide you on how to handle PDLMGIT-308: setting up MongoDB health monitoring, alerting, and logging, by collaborating with the DBA team.
+🧩 Key Points Discussed
+1. MongoDB Is Critical
+
+    The MongoDB servers are Crit 1 for your team’s tools.
+
+    If they go down, you must be alerted immediately.
+
+2. What’s Needed
+
+    HA/DR setup (to handle failovers).
+
+    Health Alerting if the DB or infra becomes inaccessible.
+
+    Operational Logging (e.g., update/delete queries) to Datadog or Splunk.
+
+3. DBA Team Involvement
+
+    The DBA team already set up something similar for GitLab, so they should be able to do it for MongoDB too.
+
+    Monitoring strings will be provided by the DBA team — your team (or Electron) can plug them into Datadog.
+
+4. Your Responsibilities
+
+    You are not building alerting, but you are:
+
+        Gathering requirements
+
+        Initiating collaboration
+
+        Making sure the pieces are in place (HA/DR, alerting, logs)
+
+🪜 Next Steps You Were Told to Take
+✅ Step 1: Confirm Server Details
+
+    Talk to Alex or Akshi during your sync to confirm which MongoDB servers are PROD and TEST.
+
+✅ Step 2: Reach Out to DBA Night Contact (Gantlapu)
+
+    Introduce yourself, say you’re from the GitHub team.
+
+    Tell him these servers are Crit 1 and you need:
+
+        HA/DR
+
+        Alerting setup
+
+        Logging for audits
+
+    Ask if they already have anything in place and what they recommend.
+
+    Ask if a ticket is needed, and who to tag for follow-ups.
+
+✅ Step 3: Team Communication
+
+    Start a Teams thread in your GitHub channel:
+
+        Mention this is for PDLMGIT-308.
+
+        Document every interaction with the DBA team.
+
+        Share status, blockers, and findings.
+
+        Tag Vasu or others for support if needed.
+
+💬 Extra Notes
+
+    Your story is related but separate from the one for GitHub Admin VM monitoring.
+
+    That one is simpler because your team owns the VM. For MongoDB, DBA owns it — so collaboration is required.
+
+    A past outage incident led to this story — because MongoDB wasn’t monitored, it stayed down unnoticed.
+
