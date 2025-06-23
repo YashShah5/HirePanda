@@ -1,0 +1,16 @@
+graph TD
+    A[Start] --> B[MongoDB Filter: repo.size > 400MB]
+    B --> C[Export Matching Repos to CSV]
+    C --> D[Loop Over CSV Repos]
+    D --> E[Clone Repository with --mirror]
+    E --> F[Scan All Branches via git ls-tree]
+    F --> G{Any file > 400MB?}
+    G -- Yes --> H[Log Violation to CSV Report]
+    G -- No --> I[No Action]
+    H --> J[Delete Local Repo]
+    I --> J
+    J --> K[Next Repo]
+    K --> D
+    D -->|All done| L[Generate Final Report]
+    L --> M[Optional: Store in Dashboard or DB]
+    M --> N[End]
