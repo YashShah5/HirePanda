@@ -1,0 +1,127 @@
+h1. Forking Policy Testing – Strategy & Results
+
+*Goal:* Evaluate different forking configurations on GitHub SaaS (EMU test environment), identify required enterprise-level policies, document risks (especially around personal namespaces), and propose a rollout model for org-to-org forking.
+
+---
+
+h2. Overview
+
+*Purpose:*
+- Test all supported GitHub SaaS forking models.
+- Document necessary policy configurations, expected behaviors, and actual results.
+- Propose a secure, scalable forking model that aligns with Qualcomm security policies.
+
+*Test Scope:*
+- Fork within same org
+- Fork across orgs within enterprise
+- Fork to personal namespace (Blocked by policy)
+
+---
+
+h2. Test Matrix Overview
+
+|| Test Case || Fork Type || Expected Outcome || Allowed? || Screenshot 1 (Settings) || Screenshot 2 (Result) ||
+| TC1 | Within same org | Fork works | Yes | tc1_policy_setting.png | tc1_fork_result.png |
+| TC2 | Across orgs in enterprise | Fork works | Yes | tc2_policy_setting.png | tc2_fork_result.png |
+| TC3 | Personal namespace (user) | Blocked | No | tc3_policy_setting.png | tc3_error_message.png |
+
+_Each test case includes two screenshots:_
+- Screenshot 1: Policy config in GitHub Enterprise settings  
+- Screenshot 2: Fork result (success page or error message)
+
+---
+
+h2. Test Case Walkthroughs
+
+h3. Test Case 1: Forking Within the Same Org
+
+*Description:* Fork a repo from Org A to the same org (Org A)
+
+*Policy Setting:*  
+Within the same organization
+
+*Screenshot:*  
+tc1_policy_setting.png – GitHub Enterprise "Repository Forking" section with selected setting
+
+*Fork Result:*  
+tc1_fork_result.png – Repo page showing “Forked from org-a/repo-name” under Org A
+
+*Outcome:* Fork succeeded  
+*Notes:* Works as expected with no issues.
+
+---
+
+h3. Test Case 2: Forking Across Orgs in the Enterprise
+
+*Description:* Fork repo from Org A into a different org (Org B) within Qualcomm enterprise
+
+*Policy Setting:*  
+Organizations within this enterprise
+
+*Screenshot:*  
+tc2_policy_setting.png
+
+*Fork Result:*  
+tc2_fork_result.png – Forked repo page under Org B showing fork lineage
+
+*Outcome:* Fork succeeded  
+*Notes:* This model is approved by engineering and security teams for production rollout.
+
+---
+
+h3. Test Case 3: Forking to Personal Namespace (Blocked)
+
+*Description:* Attempt to fork from Org A to personal user account
+
+*Policy Setting:*  
+User accounts and organizations (if visible)
+
+*Screenshot:*  
+tc3_policy_setting.png
+
+*Fork Attempt Result:*  
+tc3_error_message.png – Screenshot of GitHub UI denying the action or showing disabled option
+
+*Outcome:* Blocked  
+*Notes:* Security prohibits personal namespace forking due to:
+- Lack of IP whitelisting
+- Exposure to uncontrolled external access
+- Inability to audit and govern access properly
+
+---
+
+h2. Security Considerations
+
+h3. Personal Forking Risks
+- No IP restrictions
+- Hard to control and secure
+- Not enterprise-compliant
+
+h3. Org-based Forking Benefits
+- Controlled visibility
+- Auditable access
+- Scalable with policy guardrails
+
+---
+
+h2. Proposed Rollout Strategy
+
+h3. Approved Path: Org-to-Org Forking Only
+
+*Plan:*
+- Set up dedicated "forking orgs" (e.g., fork-eng, fork-it, fork-research)
+- Enforce enterprise policies and IP whitelisting
+- Create onboarding documentation for engineers
+
+*Considerations:*
+- Naming convention standards
+- Access request workflow
+- Clean-up policies for stale forks
+
+---
+
+h2. Recommendations
+
+- Proceed with org-to-org forking only
+- Keep personal namespace forking disabled
+- Use this page as reference for testing and rollout of forking in production
