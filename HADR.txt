@@ -142,3 +142,82 @@ To guide you on how to handle PDLMGIT-308: setting up MongoDB health monitoring,
 
     A past outage incident led to this story — because MongoDB wasn’t monitored, it stayed down unnoticed.
 
+
+Purpose: Collaborate with the DBA team to ensure monitoring, alerting, and logging are in place for our critical MongoDB servers used by PDLM tools.
+🔎 Background & Context
+
+    This effort was initiated following an incident where our MongoDB servers went down unnoticed due to lack of monitoring.
+
+    The MongoDB servers are Crit 1 — essential for the PDLM toolset.
+
+    We are seeking DBA support to implement:
+
+        High Availability / Disaster Recovery (HA/DR)
+
+        Health Monitoring / Alerting
+
+        Operational Logging (e.g., update/delete queries)
+
+🧩 Objectives of the Call
+
+    Confirm whether HA/DR is currently configured
+
+    Understand existing monitoring/alerting setup (if any)
+
+    Discuss feasibility of integrating alerts into Datadog
+
+    Explore options for logging queries to Datadog or Splunk
+
+    Clarify ticketing process and who to tag for future steps
+
+❓Discussion Topics & Questions
+🛡️ HA/DR
+
+    Are the MongoDB PROD/TEST servers configured with High Availability or DR?
+
+    If not, can you advise on how to proceed?
+
+    What would the failover process look like today?
+
+🚨 Monitoring / Alerting
+
+    Is there any existing health alerting configured (similar to GitLab)?
+
+    Can alerts be exposed or forwarded to be used with Datadog?
+
+    What configuration or YAML would be required on our side (Electron can help if needed)?
+
+📋 Logging / Auditing
+
+    Can query operations (especially update/delete) be logged?
+
+    Is your team able to forward these logs to Datadog or Splunk?
+
+    If this isn't done already, what would it take to enable this?
+
+🧾 Ticketing & Process
+
+    Once the requirements are confirmed, should I raise a Jira ticket?
+
+    Any formatting or fields you’d like included?
+
+    Who on the DBA team should I tag for continued support?
+
+📌 Internal Coordination
+
+Confirm MongoDB server names (PROD/TEST) with Alex or Akshi
+
+Validate metrics/logging support format with Electron (Datadog side)
+
+    Create Teams thread to document and share progress with the broader team
+
+🪜 Next Steps (Post-Call)
+
+    Document Gantlapu's responses in the Teams thread
+
+    Raise Jira ticket based on DBA team's feedback
+
+    Begin wiring metrics/logs into Datadog/Splunk (if support is provided)
+
+    Escalate blockers via Vasu if needed
+
