@@ -1,0 +1,52 @@
+📞 Summary: Exploratory Call with Night-Shift DBA Team (India)
+🗓 Date: [Insert Date]
+👤 Lead: Yash Shah
+🎯 Purpose: Exploratory discussion with the DBA team to understand the current MongoDB setup and discuss HA (High Availability), monitoring, and backup strategies.
+
+🧠 Discussion Highlights:
+
+• MongoDB servers recently went down unnoticed — no monitoring was in place.
+• These servers are critical to ongoing project workloads (e.g. data migration).
+
+✅ Key Takeaways:
+
+🔹 Current Setup
+• MongoDB is currently in standalone mode — no HA or failover.
+
+🔹 Monitoring
+• DBA team can add monitoring + alerting once server names are shared.
+• Metrics can be pushed to Datadog.
+
+🔹 High Availability (HA)
+• DBA recommends converting to a 3-node replica set (auto-failover).
+• No code changes needed — just update the connection string.
+• Failover will happen automatically if one node goes down.
+
+🔹 Downtime Requirement
+• Application downtime will be needed during migration to HA.
+• DBA team will handle dump + restore.
+• Coordination needed on timing from our side.
+
+🔹 Cross-Region HA
+• MongoDB supports HA across regions.
+• DBA team asked us to confirm: same-region or cross-region preference.
+
+🔹 Data Restore
+• If backups aren’t viable, data can be replayed from JSON/app-layer sources.
+
+📌 Next Steps (Assigned to Yash):
+• 🔸 Share server names (PROD/TEST)
+• 🔸 Confirm HA scope (prod only or prod + dev)
+• 🔸 Confirm region preference (same vs. cross-region)
+• 🔸 Submit detailed request email to DBA team to begin provisioning
+(Note: VM setup may be delayed due to resource constraints)
+
+📊 Quick Summary Table:
+
+• Monitoring: Needs server names; Datadog integration possible
+• Current Mode: Standalone
+• HA Option: 3-node replica set with auto-failover
+• Code Impact: Only connection string needs update
+• Downtime: Required during HA migration
+• Region Decision: Confirm same-region vs. cross-region
+• Next Steps: Submit request; DBA will review & proceed
