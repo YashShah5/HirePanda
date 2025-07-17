@@ -1,101 +1,80 @@
 import os
-import csv
-import subprocess
-import shutil
-from urllib.parse import urlparse
-from github import Github
+import time
+import requests
+import pandas as pd
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse, urljoin
 from dotenv import load_dotenv
 
-# === Load .env ===
+# Load token from .env file
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
 if not GITHUB_TOKEN:
-    raise ValueError("❌ GITHUB_TOKEN not found in .env file")
+    raise ValueError("❌ GITHUB_TOKEN not found in .env file.")
 
-# === Configuration ===
-GITHUB_BASE_URL = "https://github.qualcomm.com/api/v3"
-INPUT_CSV = "input.csv"
-OUTPUT_CSV = "orgs_with_wiki_attachments.csv"
-TMP_CLONE_DIR = "./tmp_wikis"
+# Constants
+INPUT_CSV = 'input.csv'
+OUTPUT_CSV = 'output_with_attachments.csv'
+DELAY_BETWEEN_REQUESTS = 0.5
+VERIFY_SSL = False  # Set False for GitHub Enterprise self-signed certs
 
-# === GitHub setup ===
-g = Github(base_url=GITHUB_BASE_URL, login_or_token=GITHUB_TOKEN)
-os.makedirs(TMP_CLONE_DIR, exist_ok=True)
-orgs_with_attachments = set()
+# Headers with GitHub token
+HEADERS = {
+    "Authorization": f"Bearer {GITHUB_TOKEN}",
+    "Accept": "text/html"  # Make sure we get HTML not JSON
+}
 
-# === Extract orgs from input.csv ===
-def extract_orgs_from_csv(csv_path):
-    orgs = set()
-    with open(csv_path, newline='') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            url = row.get("link") or row.get("Link") or row.get("URL")
-            if url:
-                parsed = urlparse(url)
-                parts = parsed.path.strip("/").split("/")
-                if parts:
-                    orgs.add(parts[0])
-    return list(orgs)
+# Turn off SSL warnings (internal GHEs often have self-signed certs)
+requests.packages.urllib3.disable_warnings()
 
-# === Check each repo in org for attachments ===
-def check_org_for_attachments(org_name):
-    print(f"\n🔍 Checking org: {org_name}")
+
+def extract_orgname(url):
+    return urlparse(url).path.strip('/')
+
+
+def check_for_attachments(wiki_url):
     try:
-        org = g.get_organization(org_name)
-        repos = org.get_repos()
+        response = requests.get(wiki_url, headers=HEADERS, timeout=10, verify=VERIFY_SSL)
+        if response.status_code != 200:
+            print(f"❌ Failed to fetch {wiki_url} (status {response.status_code})")
+            return False, None
 
-        for repo in repos:
-            print(f"➡️  Repo: {repo.full_name} | has_wiki={repo.has_wiki}")
+        soup = BeautifulSoup(response.text, 'html.parser')
+        for tag in soup.find_all(['a', 'img'], href=True):
+            if '/wiki/uploads/' in tag['href']:
+                full_link = urljoin(wiki_url, tag['href'])
+                return True, full_link
 
-            if not repo.has_wiki:
-                print(f"   ⛔ Skipping (wiki disabled)")
-                continue
-
-            wiki_url = f"https://{GITHUB_TOKEN}@github.qualcomm.com/{org_name}/{repo.name}.wiki.git"
-            clone_path = os.path.join(TMP_CLONE_DIR, f"{org_name}__{repo.name}.wiki")
-
-            result = subprocess.run(
-                ["git", "clone", "--depth=1", wiki_url, clone_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-
-            if result.returncode != 0:
-                print(f"   ❌ Wiki clone failed: {result.stderr.decode().strip()}")
-                continue
-            print(f"   ✅ Wiki cloned successfully.")
-
-            attachments_path = os.path.join(clone_path, "attachments")
-            if os.path.isdir(attachments_path):
-                files = os.listdir(attachments_path)
-                if files:
-                    print(f"   📎 Attachments found in {repo.full_name}: {files}")
-                    orgs_with_attachments.add(org_name)
-                    shutil.rmtree(clone_path, ignore_errors=True)
-                    return  # One match per org is enough
-                else:
-                    print(f"   🚫 attachments/ folder is empty.")
-            else:
-                print(f"   🚫 No attachments/ folder found.")
-
-            shutil.rmtree(clone_path, ignore_errors=True)
-
+        return False, None
     except Exception as e:
-        print(f"⚠️ Error scanning org {org_name}: {e}")
+        print(f"⚠️ Error checking {wiki_url}: {e}")
+        return False, None
 
-# === Run ===
-orgs = extract_orgs_from_csv(INPUT_CSV)
-print(f"\n🔎 Found {len(orgs)} orgs in CSV: {orgs}")
 
-for org_name in orgs:
-    check_org_for_attachments(org_name)
+def main():
+    df = pd.read_csv(INPUT_CSV)
+    results = []
 
-# === Output CSV ===
-with open(OUTPUT_CSV, "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["org_name"])
-    for org in sorted(orgs_with_attachments):
-        writer.writerow([org])
+    for url in df.iloc[:, 0]:  # First column = wiki URL
+        orgname = extract_orgname(url)
+        wiki_page = url.rstrip('/') + '/wiki'
 
-print(f"\n✅ Done. Found {len(orgs_with_attachments)} org(s) with wiki attachments.")
-print(f"📄 Results saved to {OUTPUT_CSV}")
+        print(f"🔍 Checking wiki for: {orgname}")
+        has_attachments, first_link = check_for_attachments(wiki_page)
+
+        results.append({
+            "orgname": orgname,
+            "wiki_url": url,
+            "has_attachments": has_attachments,
+            "first_attachment_url": first_link if has_attachments else ''
+        })
+
+        time.sleep(DELAY_BETWEEN_REQUESTS)
+
+    pd.DataFrame(results).to_csv(OUTPUT_CSV, index=False)
+    print(f"\n✅ Done! Results saved to {OUTPUT_CSV}")
+
+
+if __name__ == "__main__":
+    main()
