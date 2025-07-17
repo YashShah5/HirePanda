@@ -1,62 +1,68 @@
 import csv
 from pymongo import MongoClient
 
-# ========== CONFIGURATION ==========
-MONGO_URI = "mongodb://username:password@host:port/?authSource=admin"
-DB_NAME = "your_database"
+# --- CONFIG ---
+MONGO_URI = "mongodb://localhost:27017"  # Change to your actual URI
+DB_NAME = "your_database_name"           # <- CHANGE THIS
 ORG_COLLECTION = "ghes_organizations"
 REPO_COLLECTION = "ghes_repositories"
+CSV_OUTPUT_PATH = "reclassified_orgs.csv"
 
-# Filters to track across repos
-FILTER_FIELDS = [
-    "webhooks",
-    "runners",
-    "pages",
-    "actions",
-    "branch_protections",
-    "issues"
+# --- BLOCKERS & FIELDS ---
+ALL_FIELDS = [
+    "has_webhooks", "has_actions", "has_runners", "has_branch_protections",
+    "has_releases", "has_cci_red", "has_issues", "has_pages", "has_wiki",
+    "has_binary_files", "has_pull_requests", "size", "branches"
 ]
 
-# ========== CONNECT TO MONGO ==========
+HARD_STOP_FIELDS = [
+    "has_webhooks", "has_actions", "has_runners", "has_branch_protections",
+    "has_releases", "has_cci_red"
+]
+
+# Connect to MongoDB
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 orgs_col = db[ORG_COLLECTION]
 repos_col = db[REPO_COLLECTION]
 
-# ========== BUILD ORG-LEVEL FILTER MAP ==========
-org_filters = {}
+# Step 1: Get all complex orgs
+complex_orgs = list(orgs_col.find({"complexity_score": "Complex"}))
 
-for repo in repos_col.find():
-    org_name = repo.get("owner_name")
-    if not org_name:
-        continue
+# Step 2: Process each org
+output_rows = []
 
-    if org_name not in org_filters:
-        # Initialize all filters as False
-        org_filters[org_name] = {f: False for f in FILTER_FIELDS}
+for org in complex_orgs:
+    org_name = org.get("org_name")
+    org_url = org.get("org_url", "")
+    
+    repos = repos_col.find({
+        "owner_name": org_name,
+        "complexity_score": "Complex"
+    })
 
-    for f in FILTER_FIELDS:
-        if repo.get(f, False):  # If any repo has True → org-level becomes True
-            org_filters[org_name][f] = True
+    org_flags = {field: "Simple" for field in ALL_FIELDS}
+    still_complex = False
 
-# ========== WRITE OUTPUT TO CSV ==========
-output_file = "orgs_with_filters.csv"
-with open(output_file, "w", newline="") as f:
-    writer = csv.writer(f)
-    header = ["org_name", "org_url"] + FILTER_FIELDS
-    writer.writerow(header)
+    for repo in repos:
+        factors = repo.get("complexity_factors", {})
+        for field in ALL_FIELDS:
+            if factors.get(field) == "Complex":
+                org_flags[field] = "Complex"
+                if field in HARD_STOP_FIELDS:
+                    still_complex = True
 
-    for org in orgs_col.find():
-        org_name = org.get("org_name")
-        org_url = org.get("org_url")
+    output_rows.append({
+        "org_name": org_name,
+        "org_url": org_url,
+        **org_flags,
+        "final_classification": "Still Complex" if still_complex else "Medium"
+    })
 
-        # Skip if org isn't in filter map (no repos or unmatched name)
-        if org_name not in org_filters:
-            continue
+# Step 3: Write CSV
+with open(CSV_OUTPUT_PATH, "w", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=["org_name", "org_url"] + ALL_FIELDS + ["final_classification"])
+    writer.writeheader()
+    writer.writerows(output_rows)
 
-        row = [org_name, org_url]
-        for f in FILTER_FIELDS:
-            row.append(str(org_filters[org_name][f]).lower())  # 'true' or 'false'
-        writer.writerow(row)
-
-print(f"✅ Exported to {output_file}")
+print(f"✅ CSV written: {CSV_OUTPUT_PATH}")
