@@ -1,0 +1,99 @@
+🔷 Poster Title Section (Top, Full Width – Blue Header)
+
+GitHub Medium Complexity Reclassification
+Yash Shah – PDLM GitHub Intern
+Rutgers University, B.S. Computer Science
+Manager: Tarun Mathur | Mentor: Turan Nguyen
+🔹 Section 1: Introduction (Top-Left)
+
+What is the Problem?
+Over 2,000 GitHub orgs are tagged as "complex" due to high size, activity, or feature usage. This places unnecessary burden on support teams, many of which could be self-serviced if reclassified.
+
+Why This Matters
+
+    Reduces manual migration oversight
+
+    Empowers teams to self-serve
+
+    Saves engineering time and support costs
+
+🔹 Section 2: Objective (Top-Right)
+
+Goal:
+Reclassify eligible complex GitHub orgs as medium complexity for self-serve migration.
+
+How:
+✅ Analyze GitHub metadata using Python scripts
+✅ Refine complexity thresholds (size, commit count, features)
+✅ Automate repo scanning and classification
+✅ Create a "medium" tier logic
+🔹 Section 3: Solution Architecture (Middle-Left)
+
+Use a simplified flowchart here:
+
+flowchart TD
+    A[GitHub Org] --> B[Metadata Extraction<br/>(via MongoDB Query)]
+    B --> C[Apply Medium Complexity Rules]
+    C --> D{Complexity Tier}
+    D -- Medium --> E[Reclassified → Self-Serve]
+    D -- Still Complex --> F[Remain Manual]
+
+You can also show the classification thresholds visually:
+
+Complexity Rules:
+- Repo size < 10GB
+- Branch count < 50
+- Commit count < 300
+- No Actions, Runners, or Webhooks
+
+🔹 Section 4: Technical Implementation (Middle-Right)
+
+Tech Stack & Tools:
+
+    Python: Automation scripts for classification and metadata pulls
+
+    MongoDB: Queried repo/org metadata
+
+    GitHub API: Collected org/repo-level data
+
+    Jira, Confluence: Story tracking and documentation
+
+    Git: Internal tool debugging and updates
+
+Include a screenshot of your terminal log or repo scan output (optional).
+🔹 Section 5: Skills & Experience (Bottom-Left)
+
+🛠 Technical Skills
+
+    Python scripting (automation, logging, file handling)
+
+    MongoDB querying
+
+    GitHub admin tools and metadata
+
+    REST API consumption
+
+    SDLC tools: Jira, Confluence, UML diagrams
+
+🤝 Soft Skills
+
+    Stakeholder communication
+
+    Collaboration with GitHub PDLM team
+
+    Agile/SCRUM best practices
+
+    Writing PRDs and technical docs
+
+🔹 Section 6: Impact & Reflection (Bottom-Right)
+
+✅ Reduced migration ambiguity by refining classification logic
+✅ Closed 10+ subtasks over 3 sprints
+✅ Created scalable automation used by the PDLM migration team
+✅ Developed a “medium” tier that improved self-service pathways
+
+Reflection:
+This project gave me hands-on experience building classification systems at scale using real-world data. I learned how cross-team collaboration and backend automation can massively reduce technical debt in enterprise settings.
+🔹 Footer (Bottom Banner – Blue)
+
+Qualcomm Proprietary and Confidential
