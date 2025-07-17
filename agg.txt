@@ -1,47 +1,48 @@
-db.ghes_repositories.aggregate([
-  {
-    $match: {
-      complexity_score: "Complex"
-    }
-  },
-  {
-    $addFields: {
-      has_blocking_feature: {
-        $or: [
-          { $eq: ["$complexity_factors.has_webhooks", "Complex"] },
-          { $eq: ["$complexity_factors.has_actions", "Complex"] },
-          { $eq: ["$complexity_factors.has_runners", "Complex"] },
-          { $eq: ["$complexity_factors.has_branch_protections", "Complex"] },
-          { $eq: ["$complexity_factors.has_releases", "Complex"] },
-          { $eq: ["$complexity_factors.has_cci_red", "Complex"] }
-        ]
-      }
-    }
-  },
-  {
-    $group: {
-      _id: "$owner_name",
-      blocking_repo_count: {
-        $sum: {
-          $cond: [{ $eq: ["$has_blocking_feature", true] }, 1, 0]
+from pymongo import MongoClient
+
+# 1. Connect to MongoDB
+client = MongoClient("mongodb://localhost:27017")  # change to your connection string if needed
+db = client["your_database_name"]  # change this to your DB name
+repos = db.ghes_repositories
+
+# 2. Define hard-stop blockers
+HARD_STOP_FIELDS = [
+    "has_webhooks",
+    "has_actions",
+    "has_runners",
+    "has_branch_protections",
+    "has_releases",
+    "has_cci_red"
+]
+
+# 3. Build a dictionary to hold org → repo info
+orgs = {}
+
+# 4. Fetch all repos with complexity_score == "Complex"
+for repo in repos.find({"complexity_score": "Complex"}):
+    org = repo.get("owner_name")
+    factors = repo.get("complexity_factors", {})
+    
+    has_blocker = any(factors.get(field) == "Complex" for field in HARD_STOP_FIELDS)
+    
+    if org not in orgs:
+        orgs[org] = {
+            "has_blocker": False,
+            "repos": []
         }
-      },
-      all_complex_repos: { $push: "$full_name" }
-    }
-  },
-  {
-    $match: {
-      blocking_repo_count: 0
-    }
-  },
-  {
-    $project: {
-      _id: 0,
-      owner_name: "$_id",
-      eligible_repos: "$all_complex_repos"
-    }
-  },
-  {
-    $sort: { owner_name: 1 }
-  }
-])
+    
+    orgs[org]["repos"].append(repo.get("full_name", "unknown_repo"))
+
+    # If even one repo has a blocker, the org is blocked
+    if has_blocker:
+        orgs[org]["has_blocker"] = True
+
+# 5. Filter orgs that have NO hard-stop blockers
+eligible_orgs = {
+    org: data for org, data in orgs.items() if not data["has_blocker"]
+}
+
+# 6. Print results
+print(f"\n✅ Total organizations eligible for Medium reclassification: {len(eligible_orgs)}\n")
+for org, data in eligible_orgs.items():
+    print(f"- {org} ({len(data['repos'])} complex repos eligible)")
