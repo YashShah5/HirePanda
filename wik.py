@@ -6,11 +6,11 @@ from urllib.parse import urlparse
 from github import Github
 from dotenv import load_dotenv
 
-# === Load environment variables ===
+# === Load .env ===
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 if not GITHUB_TOKEN:
-    raise ValueError("❌ GITHUB_TOKEN not found. Please set it in your .env file.")
+    raise ValueError("❌ GITHUB_TOKEN not found in .env file")
 
 # === Configuration ===
 GITHUB_BASE_URL = "https://github.qualcomm.com/api/v3"
@@ -18,12 +18,12 @@ INPUT_CSV = "input.csv"
 OUTPUT_CSV = "orgs_with_wiki_attachments.csv"
 TMP_CLONE_DIR = "./tmp_wikis"
 
-# === GitHub client ===
+# === GitHub setup ===
 g = Github(base_url=GITHUB_BASE_URL, login_or_token=GITHUB_TOKEN)
 os.makedirs(TMP_CLONE_DIR, exist_ok=True)
 orgs_with_attachments = set()
 
-# === Step 1: Extract org names from CSV ===
+# === Extract orgs from input.csv ===
 def extract_orgs_from_csv(csv_path):
     orgs = set()
     with open(csv_path, newline='') as f:
@@ -33,20 +33,22 @@ def extract_orgs_from_csv(csv_path):
             if url:
                 parsed = urlparse(url)
                 parts = parsed.path.strip("/").split("/")
-                if len(parts) >= 1:
+                if parts:
                     orgs.add(parts[0])
     return list(orgs)
 
-# === Step 2: Check each repo for wiki attachments ===
+# === Check each repo in org for attachments ===
 def check_org_for_attachments(org_name):
+    print(f"\n🔍 Checking org: {org_name}")
     try:
         org = g.get_organization(org_name)
-        print(f"\n🔍 Scanning org: {org_name}")
         repos = org.get_repos()
 
         for repo in repos:
             print(f"➡️  Repo: {repo.full_name} | has_wiki={repo.has_wiki}")
+
             if not repo.has_wiki:
+                print(f"   ⛔ Skipping (wiki disabled)")
                 continue
 
             wiki_url = f"https://{GITHUB_TOKEN}@github.qualcomm.com/{org_name}/{repo.name}.wiki.git"
@@ -59,36 +61,36 @@ def check_org_for_attachments(org_name):
             )
 
             if result.returncode != 0:
-                print(f"   ❌ Could not clone wiki: {result.stderr.decode().strip()}")
+                print(f"   ❌ Wiki clone failed: {result.stderr.decode().strip()}")
                 continue
-
             print(f"   ✅ Wiki cloned successfully.")
-            attachments_path = os.path.join(clone_path, "attachments")
 
+            attachments_path = os.path.join(clone_path, "attachments")
             if os.path.isdir(attachments_path):
-                attachment_files = os.listdir(attachments_path)
-                if attachment_files:
-                    print(f"   📎 Attachments found: {attachment_files}")
+                files = os.listdir(attachments_path)
+                if files:
+                    print(f"   📎 Attachments found in {repo.full_name}: {files}")
                     orgs_with_attachments.add(org_name)
-                    break  # One match per org is enough
+                    shutil.rmtree(clone_path, ignore_errors=True)
+                    return  # One match per org is enough
                 else:
-                    print(f"   🚫 attachments/ folder exists but is empty.")
+                    print(f"   🚫 attachments/ folder is empty.")
             else:
-                print(f"   🚫 attachments/ folder not found.")
+                print(f"   🚫 No attachments/ folder found.")
 
             shutil.rmtree(clone_path, ignore_errors=True)
 
     except Exception as e:
-        print(f"⚠️ Error processing org {org_name}: {e}")
+        print(f"⚠️ Error scanning org {org_name}: {e}")
 
-# === Main ===
+# === Run ===
 orgs = extract_orgs_from_csv(INPUT_CSV)
-print(f"\n📦 Found {len(orgs)} org(s): {orgs}\n")
+print(f"\n🔎 Found {len(orgs)} orgs in CSV: {orgs}")
 
 for org_name in orgs:
     check_org_for_attachments(org_name)
 
-# === Output Results ===
+# === Output CSV ===
 with open(OUTPUT_CSV, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["org_name"])
@@ -96,4 +98,4 @@ with open(OUTPUT_CSV, "w", newline="") as f:
         writer.writerow([org])
 
 print(f"\n✅ Done. Found {len(orgs_with_attachments)} org(s) with wiki attachments.")
-print(f"📄 Output written to: {OUTPUT_CSV}")
+print(f"📄 Results saved to {OUTPUT_CSV}")
