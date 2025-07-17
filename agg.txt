@@ -1,0 +1,47 @@
+db.ghes_repositories.aggregate([
+  {
+    $match: {
+      complexity_score: "Complex"
+    }
+  },
+  {
+    $addFields: {
+      has_blocking_feature: {
+        $or: [
+          { $eq: ["$complexity_factors.has_webhooks", "Complex"] },
+          { $eq: ["$complexity_factors.has_actions", "Complex"] },
+          { $eq: ["$complexity_factors.has_runners", "Complex"] },
+          { $eq: ["$complexity_factors.has_branch_protections", "Complex"] },
+          { $eq: ["$complexity_factors.has_releases", "Complex"] },
+          { $eq: ["$complexity_factors.has_cci_red", "Complex"] }
+        ]
+      }
+    }
+  },
+  {
+    $group: {
+      _id: "$owner_name",
+      blocking_repo_count: {
+        $sum: {
+          $cond: [{ $eq: ["$has_blocking_feature", true] }, 1, 0]
+        }
+      },
+      all_complex_repos: { $push: "$full_name" }
+    }
+  },
+  {
+    $match: {
+      blocking_repo_count: 0
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      owner_name: "$_id",
+      eligible_repos: "$all_complex_repos"
+    }
+  },
+  {
+    $sort: { owner_name: 1 }
+  }
+])
