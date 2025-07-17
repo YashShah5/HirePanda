@@ -1,48 +1,62 @@
+import csv
 from pymongo import MongoClient
 
-# 1. Connect to MongoDB
-client = MongoClient("mongodb://localhost:27017")  # change to your connection string if needed
-db = client["your_database_name"]  # change this to your DB name
-repos = db.ghes_repositories
+# ========== CONFIGURATION ==========
+MONGO_URI = "mongodb://username:password@host:port/?authSource=admin"
+DB_NAME = "your_database"
+ORG_COLLECTION = "ghes_organizations"
+REPO_COLLECTION = "ghes_repositories"
 
-# 2. Define hard-stop blockers
-HARD_STOP_FIELDS = [
-    "has_webhooks",
-    "has_actions",
-    "has_runners",
-    "has_branch_protections",
-    "has_releases",
-    "has_cci_red"
+# Filters to track across repos
+FILTER_FIELDS = [
+    "webhooks",
+    "runners",
+    "pages",
+    "actions",
+    "branch_protections",
+    "issues"
 ]
 
-# 3. Build a dictionary to hold org → repo info
-orgs = {}
+# ========== CONNECT TO MONGO ==========
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
+orgs_col = db[ORG_COLLECTION]
+repos_col = db[REPO_COLLECTION]
 
-# 4. Fetch all repos with complexity_score == "Complex"
-for repo in repos.find({"complexity_score": "Complex"}):
-    org = repo.get("owner_name")
-    factors = repo.get("complexity_factors", {})
-    
-    has_blocker = any(factors.get(field) == "Complex" for field in HARD_STOP_FIELDS)
-    
-    if org not in orgs:
-        orgs[org] = {
-            "has_blocker": False,
-            "repos": []
-        }
-    
-    orgs[org]["repos"].append(repo.get("full_name", "unknown_repo"))
+# ========== BUILD ORG-LEVEL FILTER MAP ==========
+org_filters = {}
 
-    # If even one repo has a blocker, the org is blocked
-    if has_blocker:
-        orgs[org]["has_blocker"] = True
+for repo in repos_col.find():
+    org_name = repo.get("owner_name")
+    if not org_name:
+        continue
 
-# 5. Filter orgs that have NO hard-stop blockers
-eligible_orgs = {
-    org: data for org, data in orgs.items() if not data["has_blocker"]
-}
+    if org_name not in org_filters:
+        # Initialize all filters as False
+        org_filters[org_name] = {f: False for f in FILTER_FIELDS}
 
-# 6. Print results
-print(f"\n✅ Total organizations eligible for Medium reclassification: {len(eligible_orgs)}\n")
-for org, data in eligible_orgs.items():
-    print(f"- {org} ({len(data['repos'])} complex repos eligible)")
+    for f in FILTER_FIELDS:
+        if repo.get(f, False):  # If any repo has True → org-level becomes True
+            org_filters[org_name][f] = True
+
+# ========== WRITE OUTPUT TO CSV ==========
+output_file = "orgs_with_filters.csv"
+with open(output_file, "w", newline="") as f:
+    writer = csv.writer(f)
+    header = ["org_name", "org_url"] + FILTER_FIELDS
+    writer.writerow(header)
+
+    for org in orgs_col.find():
+        org_name = org.get("org_name")
+        org_url = org.get("org_url")
+
+        # Skip if org isn't in filter map (no repos or unmatched name)
+        if org_name not in org_filters:
+            continue
+
+        row = [org_name, org_url]
+        for f in FILTER_FIELDS:
+            row.append(str(org_filters[org_name][f]).lower())  # 'true' or 'false'
+        writer.writerow(row)
+
+print(f"✅ Exported to {output_file}")
