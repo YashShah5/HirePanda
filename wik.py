@@ -6,10 +6,9 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from dotenv import load_dotenv
 
-# Load token from .env file
+# Load token from .env
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-
 if not GITHUB_TOKEN:
     raise ValueError("❌ GITHUB_TOKEN not found in .env file.")
 
@@ -17,57 +16,93 @@ if not GITHUB_TOKEN:
 INPUT_CSV = 'input.csv'
 OUTPUT_CSV = 'output_with_attachments.csv'
 DELAY_BETWEEN_REQUESTS = 0.5
-VERIFY_SSL = False  # Set False for GitHub Enterprise self-signed certs
+VERIFY_SSL = False
 
-# Headers with GitHub token
+# Auth headers
 HEADERS = {
     "Authorization": f"Bearer {GITHUB_TOKEN}",
-    "Accept": "text/html"  # Make sure we get HTML not JSON
+    "Accept": "text/html"
 }
 
-# Turn off SSL warnings (internal GHEs often have self-signed certs)
+# Turn off SSL warnings (for GitHub Enterprise self-signed certs)
 requests.packages.urllib3.disable_warnings()
 
 
-def extract_orgname(url):
-    return urlparse(url).path.strip('/')
+def extract_org_repo(url):
+    parts = urlparse(url).path.strip('/').split('/')
+    return parts[0], parts[1] if len(parts) > 1 else None
 
 
-def check_for_attachments(wiki_url):
+def get_all_wiki_pages(base_wiki_url):
+    """
+    Returns a list of full URLs to all subpages in the wiki.
+    """
     try:
-        response = requests.get(wiki_url, headers=HEADERS, timeout=10, verify=VERIFY_SSL)
+        response = requests.get(base_wiki_url, headers=HEADERS, timeout=10, verify=VERIFY_SSL)
         if response.status_code != 200:
-            print(f"❌ Failed to fetch {wiki_url} (status {response.status_code})")
-            return False, None
+            print(f"❌ Failed to fetch {base_wiki_url} (status {response.status_code})")
+            return []
 
         soup = BeautifulSoup(response.text, 'html.parser')
+        links = soup.select('div#wiki-rightbar a[href^="/"]')
+        page_urls = [urljoin(base_wiki_url, link['href']) for link in links if link['href']]
+        return list(set(page_urls))  # de-duplicate
+
+    except Exception as e:
+        print(f"⚠️ Error fetching subpages for {base_wiki_url}: {e}")
+        return []
+
+
+def get_attachments_from_page(page_url):
+    try:
+        response = requests.get(page_url, headers=HEADERS, timeout=10, verify=VERIFY_SSL)
+        if response.status_code != 200:
+            return []
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        attachments = []
+
         for tag in soup.find_all(['a', 'img'], href=True):
             if '/wiki/uploads/' in tag['href']:
-                full_link = urljoin(wiki_url, tag['href'])
-                return True, full_link
+                attachments.append(urljoin(page_url, tag['href']))
 
-        return False, None
+        return attachments
+
     except Exception as e:
-        print(f"⚠️ Error checking {wiki_url}: {e}")
-        return False, None
+        print(f"⚠️ Error checking {page_url}: {e}")
+        return []
 
 
 def main():
     df = pd.read_csv(INPUT_CSV)
     results = []
 
-    for url in df.iloc[:, 0]:  # First column = wiki URL
-        orgname = extract_orgname(url)
-        wiki_page = url.rstrip('/') + '/wiki'
+    for url in df.iloc[:, 0]:  # First column = wiki repo URL
+        orgname, reponame = extract_org_repo(url)
+        if not reponame:
+            print(f"⚠️ Skipping invalid repo URL: {url}")
+            continue
 
-        print(f"🔍 Checking wiki for: {orgname}")
-        has_attachments, first_link = check_for_attachments(wiki_page)
+        wiki_home = url.rstrip('/') + '/wiki'
+        print(f"\n🔍 Scanning: {orgname}/{reponame}")
+
+        all_pages = get_all_wiki_pages(wiki_home)
+        if wiki_home not in all_pages:
+            all_pages.insert(0, wiki_home)
+
+        all_attachments = []
+        for page in all_pages:
+            time.sleep(DELAY_BETWEEN_REQUESTS)
+            attachments = get_attachments_from_page(page)
+            all_attachments.extend(attachments)
+
+        unique_attachments = list(set(all_attachments))
 
         results.append({
             "orgname": orgname,
             "wiki_url": url,
-            "has_attachments": has_attachments,
-            "first_attachment_url": first_link if has_attachments else ''
+            "has_attachments": bool(unique_attachments),
+            "attachment_urls": ", ".join(unique_attachments)
         })
 
         time.sleep(DELAY_BETWEEN_REQUESTS)
