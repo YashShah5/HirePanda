@@ -1,87 +1,71 @@
-import csv
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-import sys
 import os
-from dotenv import load_dotenv
-import urllib3
+import subprocess
+import shutil
+import csv
 
-# Disable warnings for self-signed certs (optional)
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# CONFIG
+INPUT_CSV = 'input.csv'  # list of GitHub repo URLs (one per line)
+OUTPUT_CSV = 'wiki_git_attachment_results.csv'
+TMP_DIR = 'tmp_wiki_clones'
 
-# Load GitHub token from .env
-load_dotenv()
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-if not GITHUB_TOKEN:
-    raise EnvironmentError("GITHUB_TOKEN not found in .env file.")
+# File extensions considered "attachments"
+ATTACHMENT_EXTS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.zip', '.pdf', '.pptx', '.docx'}
 
-HEADERS = {
-    "Authorization": f"token {GITHUB_TOKEN}"
-}
-
-def check_for_attachments(wiki_pages_url):
-    try:
-        resp = requests.get(wiki_pages_url, headers=HEADERS, verify=False)
-        if resp.status_code != 200:
-            print(f"[!] Failed to fetch {wiki_pages_url}: HTTP {resp.status_code}")
-            return False
-
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        page_links = soup.select('a[href*="/wiki/"]')
-
-        for link in page_links:
-            href = link.get('href')
-            if not href:
-                continue
-
-            full_page_url = urljoin(wiki_pages_url, href)
-            page_resp = requests.get(full_page_url, headers=HEADERS, verify=False)
-            if page_resp.status_code != 200:
-                continue
-
-            page_soup = BeautifulSoup(page_resp.text, 'html.parser')
-            attachments = page_soup.select(
-                'img[src*="/wiki-attachment/"], a[href*="/wiki-attachment/"]'
-            )
-
-            if attachments:
+def has_attachments(path):
+    for root, _, files in os.walk(path):
+        for f in files:
+            ext = os.path.splitext(f)[1].lower()
+            if ext in ATTACHMENT_EXTS:
                 return True
+            # Also check if markdown links to /wiki-attachment/
+            if ext in ['.md', '.markdown', '.txt']:
+                with open(os.path.join(root, f), 'r', encoding='utf-8', errors='ignore') as file:
+                    content = file.read()
+                    if 'wiki-attachment/' in content:
+                        return True
+    return False
 
-        return False
-    except Exception as e:
-        print(f"[!] Error checking {wiki_pages_url}: {e}")
-        return False
+def clone_and_check(url):
+    try:
+        if not url.endswith('.wiki.git'):
+            url += '.wiki.git'
 
-def main(csv_path='input.csv'):
+        repo_name = url.strip().split('/')[-1].replace('.wiki.git', '')
+        clone_path = os.path.join(TMP_DIR, repo_name)
+
+        subprocess.run(['git', 'clone', '--quiet', url, clone_path], check=True)
+        return has_attachments(clone_path)
+    except subprocess.CalledProcessError:
+        print(f"[!] Failed to clone: {url}")
+        return None
+    finally:
+        # Clean up after each repo
+        if os.path.exists(clone_path):
+            shutil.rmtree(clone_path)
+
+def main():
+    os.makedirs(TMP_DIR, exist_ok=True)
     results = []
 
-    with open(csv_path, newline='') as csvfile:
+    with open(INPUT_CSV, newline='') as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
             if not row:
                 continue
-
             base_url = row[0].strip()
-            wiki_pages_url = base_url.rstrip('/') + "/wiki/_pages"
-            print(f"🔍 Checking: {wiki_pages_url}")
-
-            has_attachments = check_for_attachments(wiki_pages_url)
-
+            print(f"🔍 Cloning: {base_url}")
+            result = clone_and_check(base_url)
             results.append({
-                'wiki_url': base_url,
-                'has_attachments': has_attachments
+                'repo_url': base_url,
+                'has_attachments': result if result is not None else 'clone_failed'
             })
 
-    # Write output to CSV
-    with open('wiki_attachment_results.csv', 'w', newline='') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=['wiki_url', 'has_attachments'])
+    with open(OUTPUT_CSV, 'w', newline='') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=['repo_url', 'has_attachments'])
         writer.writeheader()
         writer.writerows(results)
 
-    print("✅ Finished. Results saved to 'wiki_attachment_results.csv'.")
+    print(f"\n✅ Done! Results saved to: {OUTPUT_CSV}")
 
 if __name__ == '__main__':
-    # Default to input.csv if no argument provided
-    csv_file = sys.argv[1] if len(sys.argv) > 1 else 'input.csv'
-    main(csv_file)
+    main()
