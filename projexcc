@@ -1,0 +1,57 @@
+🟦 Benefits (Top Right)
+
+Benefits of Medium Complexity Classification
+
+    🔹 Reduced Support Load
+    Offloads engineering oversight by enabling more orgs to self-serve
+
+    🔹 Faster Migration Paths
+    Eligible orgs skip manual review and proceed independently
+
+    🔹 Improved Complexity Visibility
+    Introduces a scalable “medium” tier between simple and complex
+
+    🔹 Automation at Scale
+    Classification logic applies consistently across all orgs
+
+    🔹 Data-Driven Decision Making
+    Thresholds are backed by real usage and metadata patterns
+
+🟦 Future Steps (Bottom Right)
+
+Next Steps & Future Opportunities
+
+    📌 Cross-Team Validation
+    Share logic with GitHub Infra, Support, and PDLM for alignment
+
+    📌 Tooling Integration
+    Embed classification logic into migration and pre-flight tools
+
+    📌 Threshold Refinement
+    Tune complexity cutoffs as more orgs and features evolve
+
+    📌 Wiki & Attachment Checks
+    Improve detection of hidden binary/data-heavy content
+
+    📌 Metrics Dashboard
+    Create a live dashboard to track org breakdown and rule coverage
+
+🟦 Project Overview & Impact (Middle Right Box)
+
+Project Overview
+
+    Developed a reclassification system for GitHub orgs initially marked as “complex”
+
+    Used metadata analysis and Python automation to identify a new “medium” tier
+
+    Targeted goal: reduce unnecessary support load and enable self-serve migrations
+
+My Impact
+
+    ✅ Reclassified ~700 out of 1963 orgs (~35%) to medium complexity
+
+    ✅ Built and deployed scripts for repo scanning and metadata evaluation
+
+    ✅ Closed 10+ stories over 3 sprints, spanning automation, debugging, and reporting
+
+    ✅ Worked with PDLM, Infra, and Support to validate filters and thresholds
