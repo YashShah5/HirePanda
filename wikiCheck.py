@@ -53,7 +53,7 @@ def check_for_attachments(wiki_pages_url):
         print(f"[!] Error checking {wiki_pages_url}: {e}")
         return False
 
-def main(csv_path):
+def main(csv_path='input.csv'):
     results = []
 
     with open(csv_path, newline='') as csvfile:
@@ -82,7 +82,6 @@ def main(csv_path):
     print("✅ Finished. Results saved to 'wiki_attachment_results.csv'.")
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage: python check_wiki_attachments.py <input_csv_file>")
-    else:
-        main(sys.argv[1])
+    # Default to input.csv if no argument provided
+    csv_file = sys.argv[1] if len(sys.argv) > 1 else 'input.csv'
+    main(csv_file)
