@@ -1,0 +1,10 @@
+flowchart LR
+    A[Start: GitHub Org marked as Complex] --> B[Extract Metadata: size, commits, branches, features]
+
+    B --> C{Meets Medium<br>Complexity Rules?}
+
+    C -- Yes --> D[Reclassify as Medium<br>Enable Self-Serve]
+    C -- No --> E[Remain Complex<br>Manual Migration]
+
+    D --> F[Self-Serve Migration Portal]
+    E --> G[Flag for Manual Review]
