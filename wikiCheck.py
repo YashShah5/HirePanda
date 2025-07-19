@@ -2,13 +2,19 @@ import os
 import subprocess
 import shutil
 import csv
+from dotenv import load_dotenv
 
-# CONFIG
-INPUT_CSV = 'input.csv'  # list of GitHub repo URLs (one per line)
+# Load environment variables
+load_dotenv()
+USERNAME = os.getenv("GIT_USERNAME")
+TOKEN = os.getenv("GIT_TOKEN")
+
+# Config
+INPUT_CSV = 'input.csv'
 OUTPUT_CSV = 'wiki_git_attachment_results.csv'
 TMP_DIR = 'tmp_wiki_clones'
 
-# File extensions considered "attachments"
+# File types that count as attachments
 ATTACHMENT_EXTS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.zip', '.pdf', '.pptx', '.docx'}
 
 def has_attachments(path):
@@ -17,7 +23,7 @@ def has_attachments(path):
             ext = os.path.splitext(f)[1].lower()
             if ext in ATTACHMENT_EXTS:
                 return True
-            # Also check if markdown links to /wiki-attachment/
+            # Check markdown/text files for embedded attachments
             if ext in ['.md', '.markdown', '.txt']:
                 with open(os.path.join(root, f), 'r', encoding='utf-8', errors='ignore') as file:
                     content = file.read()
@@ -25,21 +31,23 @@ def has_attachments(path):
                         return True
     return False
 
-def clone_and_check(url):
+def clone_and_check(base_url):
     try:
-        if not url.endswith('.wiki.git'):
-            url += '.wiki.git'
+        # Format clone URL with credentials
+        if not base_url.endswith('.wiki.git'):
+            base_url += '.wiki.git'
+        if USERNAME and TOKEN:
+            base_url = base_url.replace("https://", f"https://{USERNAME}:{TOKEN}@")
 
-        repo_name = url.strip().split('/')[-1].replace('.wiki.git', '')
+        repo_name = base_url.strip().split('/')[-1].replace('.wiki.git', '')
         clone_path = os.path.join(TMP_DIR, repo_name)
 
-        subprocess.run(['git', 'clone', '--quiet', url, clone_path], check=True)
+        subprocess.run(['git', 'clone', '--quiet', base_url, clone_path], check=True)
         return has_attachments(clone_path)
     except subprocess.CalledProcessError:
-        print(f"[!] Failed to clone: {url}")
+        print(f"[!] Failed to clone: {base_url}")
         return None
     finally:
-        # Clean up after each repo
         if os.path.exists(clone_path):
             shutil.rmtree(clone_path)
 
@@ -53,7 +61,7 @@ def main():
             if not row:
                 continue
             base_url = row[0].strip()
-            print(f"🔍 Cloning: {base_url}")
+            print(f"🔍 Checking: {base_url}")
             result = clone_and_check(base_url)
             results.append({
                 'repo_url': base_url,
@@ -65,7 +73,7 @@ def main():
         writer.writeheader()
         writer.writerows(results)
 
-    print(f"\n✅ Done! Results saved to: {OUTPUT_CSV}")
+    print(f"\n✅ Done! Results saved to '{OUTPUT_CSV}'")
 
 if __name__ == '__main__':
     main()
