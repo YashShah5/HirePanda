@@ -1,0 +1,23 @@
+Findings & Final Impact
+
+    Total orgs initially flagged as complex: 1,982
+
+    Total complex orgs after reclassification: 1,169
+
+    Net reduction: 813 orgs (~41%) now eligible for self-service migration
+
+Breakdown by complexity factor (orgs removed):
+
+    Commit Count Threshold Adjustment: 185 orgs
+
+    Branch Count Tuning: 170 orgs
+
+    Issue Volume Recalibration: 145 orgs
+
+    Wiki Signal Refinement: 120 orgs
+
+    Pages Activity Filtering: 105 orgs
+
+    Repo Size Limit Reassessment: 88 orgs
+
+→ Result: Reclassification efforts significantly expanded self-serve migration eligibility, accelerating GitHub SaaS adoption at scale.
