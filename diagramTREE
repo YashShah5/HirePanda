@@ -1,35 +1,35 @@
 flowchart TD
-    A[👤 User Requests Migration]
+    A[User Requests Migration]
 
-    A --> B1[🔴 OLD PROCESS]
-    A --> B2[🟢 NEW PROCESS]
+    A --> B1[OLD PROCESS]
+    A --> B2[NEW PROCESS]
 
     %% Old Process
-    B1 --> C1[🚩 Flag for Manual Review]
-    C1 --> D1[🧤 Requires White Glove Service]
-    D1 --> E1[😞 User Waits for Support]
+    B1 --> C1[Flag for Manual Review]
+    C1 --> D1[Requires White Glove Service]
+    D1 --> E1[User Waits for Support]
 
     %% New Process
-    B2 --> C2[🧠 Extract Metadata]
-    C2 --> D2[📊 Apply Complexity Filters]
-    D2 --> F[📋 Complexity Filter Outcomes]
+    B2 --> C2[Extract Metadata]
+    C2 --> D2[Apply Complexity Filters]
+    D2 --> F[Complexity Filter Outcomes]
 
     %% Classification Breakdown
-    subgraph F[📋 Complexity Filter Outcomes]
+    subgraph F[Complexity Filter Outcomes]
         direction TB
-        G1[✅ Available for Self-Help Portal<br><br>- Commit Count<br>- Branch Count<br>- Issues<br>- Pages<br>- Wiki<br>- Size]
-        G2[❌ White Glove Service Needed<br><br>- Releases<br>- Actions<br>- Runners<br>- Branch Protections<br>- Webhooks]
+        G1[Available for Self-Help Portal<br><br>- Commit Count<br>- Branch Count<br>- Issues<br>- Pages<br>- Wiki<br>- Size]
+        G2[White Glove Service Needed<br><br>- Releases<br>- Actions<br>- Runners<br>- Branch Protections<br>- Webhooks]
     end
 
     %% Filter Decision
-    F --> E2{✅ Pass Filters?}
+    F --> E2{Pass Filters?}
 
-    E2 --> H1[🔓 Enable Self-Serve Portal]
-    H1 --> I1[😀 User Completes Migration Easily]
+    E2 --> H1[Enable Self-Serve Portal]
+    H1 --> I1[User Completes Migration]
 
-    E2 --> H2[🚩 Flag for Manual Review]
-    H2 --> I2[🧤 White Glove Service Needed]
-    I2 --> J2[😞 Support Required]
+    E2 --> H2[Flag for Manual Review]
+    H2 --> I2[White Glove Service Needed]
+    I2 --> J2[Support Required]
 
     %% Styling (Optional)
     style B2 fill:#e0ffe0,stroke:#00a000
