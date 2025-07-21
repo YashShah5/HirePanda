@@ -1,23 +1,31 @@
-Findings & Final Impact
-
-    Total orgs initially flagged as complex: 1,982
-
-    Total complex orgs after reclassification: 1,169
-
-    Net reduction: 813 orgs (~41%) now eligible for self-service migration
-
-Breakdown by complexity factor (orgs removed):
-
-    Commit Count Threshold Adjustment: 185 orgs
-
-    Branch Count Tuning: 170 orgs
-
-    Issue Volume Recalibration: 145 orgs
-
-    Wiki Signal Refinement: 120 orgs
-
-    Pages Activity Filtering: 105 orgs
-
-    Repo Size Limit Reassessment: 88 orgs
-
-→ Result: Reclassification efforts significantly expanded self-serve migration eligibility, accelerating GitHub SaaS adoption at scale.
+---
+config:
+  look: neo
+  layout: fixed
+  theme: redux
+---
+flowchart TD
+ subgraph X["<b>Complexity Filters</b>"]
+    direction TB
+        G1["<b>✅ Available for Self-Help Portal</b><br><br><b>• Commit Count</b><br><b>• Branch Count</b><br><b>• Issues</b><br><b>• Pages</b><br><b>• Wiki</b><br><b>• Size</b>"]
+        G2["<b>❌ White Glove Service Needed</b><br><br><b>• Releases</b><br><b>• Actions</b><br><b>• Runners</b><br><b>• Branch Protections</b><br><b>• Webhooks</b>"]
+  end
+    A["👤 User Requests Migration"] --> B1["🔴 OLD PROCESS"] & B2["🟢 NEW PROCESS"]
+    B1 --> C1["🚩 Flag for Manual Review"]
+    C1 --> D1["🧤 Requires White Glove Service"]
+    D1 --> E1["😞 User Waits for Support"]
+    B2 --> C2["🧠 Extract Metadata"]
+    C2 --> D2["📊 Apply Complexity Filters"]
+    D2 --> X
+    X --> F{"✅ Pass Filters?"}
+    F --> G1out["🔓 Enable Self-Serve Portal"] & G2out["🚩 Flag for Manual Review"]
+    G1out --> H1["😀 User Completes Migration Easily"]
+    G2out --> H2["🧤 White Glove Service Needed"]
+    H2 --> I2["😞 Support Required"]
+    style G1 fill:#eaffea,stroke:#00a000
+    style G2 fill:#ffeaea,stroke:#d00000
+    style B1 fill:#ffe0e0,stroke:#d00000
+    style B2 fill:#e0ffe0,stroke:#00a000
+    style X fill:#ffffff,stroke:#888,stroke-width:2px
+    style G1out fill:#e0f7ff
+    style G2out fill:#ffeaea
