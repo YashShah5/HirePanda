@@ -1,0 +1,217 @@
+# SPIKE: GHE CLI Across N Bases for APM Integration
+
+---
+
+## 1. What’s the Problem
+
+Can we use GitHub Enterprise CLI and related admin tooling across multiple environments ("N bases") to collect useful data and send it to observability tools like Splunk and Datadog?
+
+**Goal:**
+- Understand what data we can collect using commands  
+- Identify what is useful for monitoring  
+- Identify gaps  
+
+---
+
+## 2. Key Terms (Quick)
+
+- **GHE** → internal GitHub (repos, users, workflows, logs)  
+- **CLI** → command line access to GitHub APIs  
+- **N Bases** → multiple orgs / environments  
+- **APM** → monitoring tools (Datadog, Splunk)  
+
+---
+
+## 3. Scope
+
+### In Scope
+- Identify useful `ghe-cli` / GitHub CLI / admin commands  
+- Document what data each command gives  
+- Evaluate usefulness for monitoring  
+- Check if data can be exported (JSON → Splunk / Datadog)  
+
+### Out of Scope
+- AI / MCP diagnostic system  
+- Full monitoring dashboards  
+- Production pipelines  
+
+---
+
+## 4. Approach
+
+- Reviewed GitHub CLI + API commands  
+  https://cli.github.com/manual/  
+
+- Explored governance + audit data  
+  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise  
+
+- Reviewed monitoring dashboards  
+  https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
+
+- Reviewed log forwarding + system logs  
+  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding  
+  https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-system-logs  
+
+- Reviewed health checks + troubleshooting  
+  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-and-managing-your-instance/monitoring-your-instance/generating-a-health-check-for-your-enterprise  
+  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-and-managing-your-instance/monitoring-your-instance/troubleshooting-resource-allocation-problems  
+
+- Reviewed `ghe-governor` discussion  
+  https://github.com/orgs/community/discussions/34220  
+
+---
+
+## 5. Command + Data Review
+
+### Legend
+- ⭐⭐⭐ = High value  
+- ⭐⭐ = Medium  
+- ⭐ = Low  
+
+---
+
+### A. GitHub CLI (gh)
+
+Reference: https://cli.github.com/manual/
+
+| Command | What it Gets | Usefulness | Notes |
+|--------|-------------|-----------|------|
+| `gh repo list <org>` | repo inventory | ⭐⭐⭐ | strong baseline |
+| `gh repo view <repo> --json` | repo metadata | ⭐⭐⭐ | structured JSON |
+| `gh run list` | workflow runs | ⭐⭐⭐ | CI/CD visibility |
+| `gh run view <id>` | workflow details | ⭐⭐ | requires multiple calls |
+| `gh api /orgs/{org}/audit-log` | audit logs | ⭐⭐⭐ | governance + activity |
+| `gh api /repos/{owner}/{repo}/actions/runs` | workflow data | ⭐⭐⭐ | deeper CI insight |
+
+---
+
+### B. Governance / Audit Data
+
+Reference:  
+https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise  
+
+| Area | Data | Usefulness | Notes |
+|------|------|-----------|------|
+| Audit logs | user/admin activity | ⭐⭐⭐ | key governance signal |
+| Repo activity | commits/pushes | ⭐⭐ | partial coverage |
+| Workflow usage | CI/CD runs | ⭐⭐⭐ | strong signal |
+
+---
+
+### C. ghe-governor (Admin Tooling)
+
+Reference:  
+https://github.com/orgs/community/discussions/34220  
+
+| Command Type | What it Shows | Usefulness | Notes |
+|-------------|--------------|-----------|------|
+| traffic (clone/fetch/push) | Git usage | ⭐⭐⭐ | strong for load analysis |
+| concurrent clones | system stress | ⭐⭐⭐ | useful signal |
+| CPU-heavy repos | performance issues | ⭐⭐⭐ | identifies bottlenecks |
+| disk writes | storage usage | ⭐⭐ | situational |
+
+---
+
+### D. Less Useful / Limited Commands
+
+Reference: https://cli.github.com/manual/
+
+| Command | Why Limited | Usefulness |
+|--------|------------|-----------|
+| `gh repo clone` | not monitoring-related | ⭐ |
+| `gh issue list` | product usage only | ⭐ |
+| `gh pr list` | not infra-level | ⭐ |
+| basic repo stats | lacks system context | ⭐⭐ |
+
+---
+
+## 6. What Data We Can Collect
+
+### Strong Coverage
+- Repo inventory  
+- Workflow runs  
+- Audit logs  
+- Git traffic (via governor)  
+- Activity patterns  
+
+References:
+- https://cli.github.com/manual/  
+- https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise  
+- https://github.com/orgs/community/discussions/34220  
+
+---
+
+### Missing / Weak Coverage
+
+- CPU (full system level)  
+- Memory usage  
+- Request latency  
+- API performance  
+- Service errors  
+
+Reference:  
+https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
+
+---
+
+## 7. Key Findings
+
+### 1. CLI is good for structured data
+- Scriptable  
+- Works across environments  
+- Good for repo + workflow + audit data  
+
+Reference: https://cli.github.com/manual/
+
+---
+
+### 2. CLI is not full monitoring
+- Does not expose deep system metrics  
+
+Reference:  
+https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
+
+---
+
+### 3. Logs are critical
+GitHub recommends:
+- system logs  
+- log forwarding  
+
+Reference:  
+https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding  
+
+---
+
+### 4. Built-in monitoring exists
+- dashboards  
+- health checks  
+
+References:
+- https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
+- https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-and-managing-your-instance/monitoring-your-instance/generating-a-health-check-for-your-enterprise  
+
+---
+
+### 5. Best approach is hybrid
+- CLI → structured data  
+- Logs → observability  
+
+---
+
+## 8. Recommendation
+
+Use a combined approach:
+
+1. CLI for structured data  
+2. Logs for system observability  
+3. Export:
+   - Splunk → logs  
+   - Datadog → metrics  
+
+Reference:  
+https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding  
+
+---
+
+## 9. Mini Architecture Diagram
