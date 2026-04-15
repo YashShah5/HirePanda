@@ -1,217 +1,190 @@
-# SPIKE: GHE CLI Across N Bases for APM Integration
+Here are the notes you asked me to keep track of, consolidated and cleaned up for you:
+
+Core Diagram / Story Summary
+Blue = Users trigger actions (push code, clone, fetch, workflows, API calls, webhooks).
+Orange = Data collection layer gathers logs, identities, governance data, metrics, workflow activity.
+Pink = Processing / pipeline layer transforms, packages, exports data.
+Green = Splunk for logs, incidents, event correlation, observability.
+Red = Datadog for metrics, dashboards, alerts, infrastructure monitoring.
+
+Simple flow:
+Blue triggers → Orange gathers → Pink processes → Green/Red visualize.
+
+GHE Governor
+GHE Governor is an admin / governance toolkit for GitHub Enterprise.
+Helps analyze Git traffic, repository load, concurrency, cloning activity, and operational patterns.
+Useful during incidents to identify hot repositories, expensive operations, clone storms, etc.
+Helps answer: What repos or operations are stressing the appliance?
+GitHub CLI
+GitHub CLI is a terminal-based remote control for GitHub.
+Lets you interact with GitHub without the UI.
+Examples:
+gh repo list = list repos
+gh repo view = inspect repo
+Pull governance/activity data in structured formats like JSON.
+Governance / Audit Data
+Audit logs = who did what and when.
+Repo activity = pushes, changes, usage.
+Workflow usage = Actions runs / automation activity.
+Gives a clear paper trail during incidents or reviews.
+Filters / Export Flags Purpose
+
+Flags like -j, -n, -t, -u, -r, etc. are used to:
+
+Filter by time window
+Filter by repo
+Filter by user
+Limit output
+Export structured JSON
+
+Useful for sending clean data into Splunk or Datadog.
+
+Metric Glossary
+RT = Response Time
+AVG RT = Average Response Time
+MAX RT = Max Response Time
+PL = Parallelism (how many Git actions at once)
+UPL = Data uploaded to GHES
+RCV = Data received by GHES
+Clone Codes
+0 = Fetch
+1 = Clone
+2 = Shallow Fetch
+3 = Shallow Clone
+4–7 = Filtered variants
+Why You Made Categories
+GOV = Governance
+Compliance
+Inventory
+Access / controls
+Audit posture
+ACT = Activity
+Incident forensics
+User activity
+Correlation during incidents
+APM = Performance
+Load issues
+Resource contention
+Bottlenecks
+Performance troubleshooting
+
+These buckets help organize tool usage.
+
+What Data Can Be Collected (Strong Coverage)
+Repo inventory
+Workflow runs
+Audit logs
+Git traffic via Governor
+Activity patterns
+Queue state
+Service state
+Webhook activity
+Live logs
+Search index health
+Missing / Weak Coverage
+
+GitHub CLI / governance tooling alone does not fully cover:
+
+CPU
+Full memory usage
+Request latency
+API performance
+Deep service errors
+Full host-level observability
+Key Findings
+CLI is great for structured data
+CLI is not full monitoring
+Governor is best CLI tool for Git load analysis
+Logs are still critical
+Built-in dashboards help, but not enough alone
+Best Approach (Your Main Talking Point)
+
+Yes, governance tooling can help collect metrics and export useful data partially, but not fully.
 
----
+Recommended Hybrid Model:
+GitHub CLI = governance, inventory, workflows, audit snapshots
+GHE Governor = Git traffic, hot repos, expensive operations
+Splunk = logs, incidents, events
+Datadog = CPU, memory, disk, host alerts
+One-liner:
 
-## 1. What’s the Problem
+Use each tool where it is strongest instead of forcing one tool to do everything.
 
-Can we use GitHub Enterprise CLI and related admin tooling across multiple environments ("N bases") to collect useful data and send it to observability tools like Splunk and Datadog?
+Follow-Up Stories
+Enable / validate GHES log forwarding to Splunk
+Implement Datadog host / VM monitoring
+Standardize Governor usage for incidents + reporting
+Build Governor incident cookbook (clone storms, hot repos, CPU spikes)
+Standardize GHES triage commands
+Build scheduled governance snapshot exporter
+AI MCP Future Idea
 
-**Goal:**
-- Understand what data we can collect using commands  
-- Identify what is useful for monitoring  
-- Identify gaps  
+Future idea from teammate:
 
----
+Build an AI assistant / MCP system that understands GHES health, Governor outputs, and admin tools.
 
-## 2. Key Terms (Quick)
+Example use:
 
-- **GHE** → internal GitHub (repos, users, workflows, logs)  
-- **CLI** → command line access to GitHub APIs  
-- **N Bases** → multiple orgs / environments  
-- **APM** → monitoring tools (Datadog, Splunk)  
+“Why is the appliance slow?”
+“Any hot repos right now?”
+“Show recent clone spikes”
+“What services are unhealthy?”
 
----
+AI would run diagnostics and give simple answers.
 
-## 3. Scope
+Smart Question to Ask in Demo
 
-### In Scope
-- Identify useful `ghe-cli` / GitHub CLI / admin commands  
-- Document what data each command gives  
-- Evaluate usefulness for monitoring  
-- Check if data can be exported (JSON → Splunk / Datadog)  
+“If we pursue the AI MCP concept, would we want it focused first on read-only diagnostics and summarization, or eventually allow guided remediation actions too?”
 
-### Out of Scope
-- AI / MCP diagnostic system  
-- Full monitoring dashboards  
-- Production pipelines  
 
----
 
-## 4. Approach
+----------------
 
-- Reviewed GitHub CLI + API commands  
-  https://cli.github.com/manual/  
 
-- Explored governance + audit data  
-  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise  
+Yes, governance tooling can help collect metrics and export useful data partially, but not fully.
 
-- Reviewed monitoring dashboards  
-  https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
+Why is it partially 
 
-- Reviewed log forwarding + system logs  
-  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding  
-  https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-system-logs  
 
-- Reviewed health checks + troubleshooting  
-  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-and-managing-your-instance/monitoring-your-instance/generating-a-health-check-for-your-enterprise  
-  https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-and-managing-your-instance/monitoring-your-instance/troubleshooting-resource-allocation-problems  
+It is partially because governance tooling gives you some important operational data, but not complete appliance observability.
 
-- Reviewed `ghe-governor` discussion  
-  https://github.com/orgs/community/discussions/34220  
+What It Can Give You
 
----
+Governance / CLI / Governor tools are strong for:
 
-## 5. Command + Data Review
+Audit logs (who did what)
+Repo inventory
+Workflow / Actions usage
+Git traffic patterns
+Clone / fetch / push behavior
+Hot repositories
+Concurrency / load from Git operations
+Structured exports (JSON / reports)
 
-### Legend
-- ⭐⭐⭐ = High value  
-- ⭐⭐ = Medium  
-- ⭐ = Low  
+That means it helps explain usage behavior and GitHub activity.
 
----
+What It Cannot Fully Give You
 
-### A. GitHub CLI (gh)
+It usually does not provide full deep infrastructure monitoring such as:
 
-Reference: https://cli.github.com/manual/
+Real-time CPU saturation
+Full memory pressure / leaks
+Disk I/O bottlenecks
+Network latency
+OS-level host health
+Detailed service crashes
+End-to-end request latency across all services
+Advanced alerting / anomaly detection
 
-| Command | What it Gets | Usefulness | Notes |
-|--------|-------------|-----------|------|
-| `gh repo list <org>` | repo inventory | ⭐⭐⭐ | strong baseline |
-| `gh repo view <repo> --json` | repo metadata | ⭐⭐⭐ | structured JSON |
-| `gh run list` | workflow runs | ⭐⭐⭐ | CI/CD visibility |
-| `gh run view <id>` | workflow details | ⭐⭐ | requires multiple calls |
-| `gh api /orgs/{org}/audit-log` | audit logs | ⭐⭐⭐ | governance + activity |
-| `gh api /repos/{owner}/{repo}/actions/runs` | workflow data | ⭐⭐⭐ | deeper CI insight |
+That requires tools like Datadog or Splunk.
 
----
+Easy Analogy
 
-### B. Governance / Audit Data
+Governance tooling is like checking the airport passenger list and flight schedule.
+You can see who traveled and where traffic is heavy.
 
-Reference:  
-https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise  
+But it doesn’t tell you whether the engine is overheating or the runway lights failed.
 
-| Area | Data | Usefulness | Notes |
-|------|------|-----------|------|
-| Audit logs | user/admin activity | ⭐⭐⭐ | key governance signal |
-| Repo activity | commits/pushes | ⭐⭐ | partial coverage |
-| Workflow usage | CI/CD runs | ⭐⭐⭐ | strong signal |
+Best Demo Line
 
----
-
-### C. ghe-governor (Admin Tooling)
-
-Reference:  
-https://github.com/orgs/community/discussions/34220  
-
-| Command Type | What it Shows | Usefulness | Notes |
-|-------------|--------------|-----------|------|
-| traffic (clone/fetch/push) | Git usage | ⭐⭐⭐ | strong for load analysis |
-| concurrent clones | system stress | ⭐⭐⭐ | useful signal |
-| CPU-heavy repos | performance issues | ⭐⭐⭐ | identifies bottlenecks |
-| disk writes | storage usage | ⭐⭐ | situational |
-
----
-
-### D. Less Useful / Limited Commands
-
-Reference: https://cli.github.com/manual/
-
-| Command | Why Limited | Usefulness |
-|--------|------------|-----------|
-| `gh repo clone` | not monitoring-related | ⭐ |
-| `gh issue list` | product usage only | ⭐ |
-| `gh pr list` | not infra-level | ⭐ |
-| basic repo stats | lacks system context | ⭐⭐ |
-
----
-
-## 6. What Data We Can Collect
-
-### Strong Coverage
-- Repo inventory  
-- Workflow runs  
-- Audit logs  
-- Git traffic (via governor)  
-- Activity patterns  
-
-References:
-- https://cli.github.com/manual/  
-- https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise  
-- https://github.com/orgs/community/discussions/34220  
-
----
-
-### Missing / Weak Coverage
-
-- CPU (full system level)  
-- Memory usage  
-- Request latency  
-- API performance  
-- Service errors  
-
-Reference:  
-https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
-
----
-
-## 7. Key Findings
-
-### 1. CLI is good for structured data
-- Scriptable  
-- Works across environments  
-- Good for repo + workflow + audit data  
-
-Reference: https://cli.github.com/manual/
-
----
-
-### 2. CLI is not full monitoring
-- Does not expose deep system metrics  
-
-Reference:  
-https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
-
----
-
-### 3. Logs are critical
-GitHub recommends:
-- system logs  
-- log forwarding  
-
-Reference:  
-https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding  
-
----
-
-### 4. Built-in monitoring exists
-- dashboards  
-- health checks  
-
-References:
-- https://docs.github.com/en/enterprise-server@3.16/admin/monitoring-and-managing-your-instance/monitoring-your-instance/about-the-monitor-dashboards  
-- https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-and-managing-your-instance/monitoring-your-instance/generating-a-health-check-for-your-enterprise  
-
----
-
-### 5. Best approach is hybrid
-- CLI → structured data  
-- Logs → observability  
-
----
-
-## 8. Recommendation
-
-Use a combined approach:
-
-1. CLI for structured data  
-2. Logs for system observability  
-3. Export:
-   - Splunk → logs  
-   - Datadog → metrics  
-
-Reference:  
-https://docs.github.com/en/enterprise-server@3.14/admin/monitoring-activity-in-your-enterprise/exploring-user-activity-in-your-enterprise/log-forwarding  
-
----
-
-## 9. Mini Architecture Diagram
+“Governance tooling provides strong visibility into user activity, Git load, and operational patterns, but it does not replace dedicated infrastructure monitoring. That’s why it is a partial solution rather than a complete observability solution.”
